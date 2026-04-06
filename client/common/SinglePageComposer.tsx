@@ -147,7 +147,6 @@ export const SinglePageComposer = forwardRef<
     pdfProps,
     entityUpdatingProperties,
   } = props;
-  console.log('SinglePageComposer');
   const hh = header?.header;
   const title = (hh?.title as string) ?? "Untitled";
   const subtitle = hh?.subtitle as string | undefined;

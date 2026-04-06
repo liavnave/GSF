@@ -29,7 +29,6 @@ export const SinglePageView = ({
 }: SinglePageViewProps): React.JSX.Element | null => {
   const [loading, setLoading] = useState(true);
   const [props, setProps] = useState<SinglePageFormat | null>(null);
-console.log('SinglePageView');
   useEffect(() => {
     let cancelled = false;
     (async () => {
