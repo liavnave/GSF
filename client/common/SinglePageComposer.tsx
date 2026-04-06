@@ -1,7 +1,11 @@
 "use client";
 
-import { forwardRef } from "react";
-import type { Breadcrumb } from "@/common/Breadcrumbs/Breadcrumbs";
+import { forwardRef, type ReactNode } from "react";
+import type { Breadcrumb } from "@/types/breadcrumbs";
+import {
+  isComposerSection,
+  type ComposerSection,
+} from "@/types/composer-section";
 
 export type SinglePageComposerProps = {
   sections: unknown[];
@@ -9,8 +13,8 @@ export type SinglePageComposerProps = {
     header?: Record<string, unknown>;
     errorBanner?: unknown;
   };
-  leftPanel?: { bulks: unknown[]; width: string };
-  rightPanel?: { bulks: unknown[]; width: string };
+  leftPanel?: { bulks: unknown[]; width: string; slot?: ReactNode };
+  rightPanel?: { bulks: unknown[]; width: string; slot?: ReactNode };
   pdfProps?: {
     isPDFView: boolean;
     headerProps: Record<string, unknown>;
@@ -26,6 +30,7 @@ type EditHeaderProps = {
 };
 
 function sectionTitle(section: unknown): string {
+  if (isComposerSection(section)) return section.title;
   if (section && typeof section === "object") {
     const o = section as Record<string, unknown>;
     if (typeof o.heading === "string") return o.heading;
@@ -33,6 +38,88 @@ function sectionTitle(section: unknown): string {
     if (typeof o.id === "string") return o.id;
   }
   return "Section";
+}
+
+function renderComposerSection(section: ComposerSection): ReactNode {
+  switch (section.kind) {
+    case "textCard":
+      return (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {section.title}
+          </h2>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            {section.body}
+          </p>
+        </div>
+      );
+    case "infoGrid":
+      return (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {section.title}
+          </h2>
+          <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {section.items.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-md border border-zinc-100 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/80"
+              >
+                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  {item.label}
+                </dt>
+                <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                  {item.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      );
+    case "dataTable":
+      return (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {section.title}
+          </h2>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <table className="w-full min-w-[28rem] text-left text-sm">
+              <thead className="border-b border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/80">
+                <tr>
+                  {section.columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300"
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {section.rows.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className="border-b border-zinc-100 dark:border-zinc-800"
+                  >
+                    {section.columns.map((col) => (
+                      <td
+                        key={col.key}
+                        className="px-3 py-2 text-zinc-800 dark:text-zinc-200"
+                      >
+                        {row[col.key] ?? "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    default:
+      return null;
+  }
 }
 
 function breadcrumbsFromPdf(
@@ -48,11 +135,6 @@ function breadcrumbsFromPdf(
   );
 }
 
-/**
- * GSF preview composer — real illumex UI lives in
- * `illumex/.../components/common/SinglePageComposer`. This renders the same props
- * in a simple layout so SinglePageView is visible without porting that tree.
- */
 export const SinglePageComposer = forwardRef<
   HTMLDivElement,
   SinglePageComposerProps
@@ -65,7 +147,7 @@ export const SinglePageComposer = forwardRef<
     pdfProps,
     entityUpdatingProperties,
   } = props;
-
+  console.log('SinglePageComposer');
   const hh = header?.header;
   const title = (hh?.title as string) ?? "Untitled";
   const subtitle = hh?.subtitle as string | undefined;
@@ -138,7 +220,7 @@ export const SinglePageComposer = forwardRef<
   return (
     <div
       ref={ref}
-      className="flex w-full min-w-0 flex-col gap-0 rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
+      className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
     >
       {header?.errorBanner ? (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
@@ -221,36 +303,61 @@ export const SinglePageComposer = forwardRef<
       </header>
 
       <div
-        className="grid w-full min-w-0 flex-1 gap-0"
+        className="grid w-full min-h-[min(55vh,520px)] min-w-0 flex-1 gap-0"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {leftPanel ? (
-          <aside className="border-r border-zinc-200 bg-white/60 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Left panel
-            </p>
-            <p className="text-xs text-zinc-500">
-              {leftPanel.bulks.length} bulk(s) · width {leftPanel.width}
-            </p>
+          <aside className="flex min-h-0 min-w-0 flex-col border-r border-zinc-200 bg-white/60 dark:border-zinc-700 dark:bg-zinc-950/60">
+            {leftPanel.slot ? (
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2">
+                {leftPanel.slot}
+              </div>
+            ) : (
+              <div className="p-3 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Left panel
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {leftPanel.bulks.length} bulk(s) · width {leftPanel.width}
+                </p>
+              </div>
+            )}
           </aside>
         ) : null}
 
-        <main className="min-w-0 border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
-          <div className="space-y-4">
-            {sections.map((section, i) => (
-              <section
-                key={i}
-                className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30"
-              >
-                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {sectionTitle(section)}
-                </h2>
-                <pre className="mt-2 max-h-40 overflow-auto rounded bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                  {JSON.stringify(section, null, 2)}
-                </pre>
-              </section>
-            ))}
-          </div>
+        <main className="min-h-0 min-w-0 overflow-y-auto border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+          {sections.length === 0 ? (
+            <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/20">
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                Nothing selected
+              </p>
+              <p className="max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
+                Choose a database, schema, table, or column in the tree on the
+                left to load description, owner notes, information, and child
+                entities.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sections.map((section, i) =>
+                isComposerSection(section) ? (
+                  <div key={section.id}>{renderComposerSection(section)}</div>
+                ) : (
+                  <section
+                    key={i}
+                    className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30"
+                  >
+                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {sectionTitle(section)}
+                    </h2>
+                    <pre className="mt-2 max-h-40 overflow-auto rounded bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                      {JSON.stringify(section, null, 2)}
+                    </pre>
+                  </section>
+                ),
+              )}
+            </div>
+          )}
 
           {entityUpdatingProperties &&
           Object.keys(entityUpdatingProperties).length > 0 ? (
@@ -273,13 +380,21 @@ export const SinglePageComposer = forwardRef<
         </main>
 
         {rightPanel ? (
-          <aside className="border-l border-zinc-200 bg-white/60 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Right panel
-            </p>
-            <p className="text-xs text-zinc-500">
-              {rightPanel.bulks.length} bulk(s) · width {rightPanel.width}
-            </p>
+          <aside className="flex min-h-0 min-w-0 flex-col border-l border-zinc-200 bg-white/60 dark:border-zinc-700 dark:bg-zinc-950/60">
+            {rightPanel.slot ? (
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2">
+                {rightPanel.slot}
+              </div>
+            ) : (
+              <div className="p-3 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Right panel
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {rightPanel.bulks.length} bulk(s) · width {rightPanel.width}
+                </p>
+              </div>
+            )}
           </aside>
         ) : null}
       </div>

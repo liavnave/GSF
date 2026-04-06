@@ -1,6 +1,5 @@
-import type { DataModels } from "@/common/enums";
+import type { DataModels } from "@/enums/datasources";
 
-/** Port from illumex `components/dataPage/sections/base.tsx`. */
 export function getTitleFromDataModelType(type: DataModels): string {
   return String(type).toLowerCase().replace(/_/g, " ");
 }
