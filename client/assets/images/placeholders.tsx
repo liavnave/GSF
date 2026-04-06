@@ -1,4 +1,3 @@
-/** Port from illumex `assets/images/placeholders` when assets exist. */
 export const Placeholders = {
   NoResults: function NoResults() {
     return (
