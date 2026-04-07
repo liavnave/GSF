@@ -111,7 +111,7 @@ export function DataWorkspaceView({ databases, loadError }: DataWorkspaceViewPro
           </span>
           Home
         </Link>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-4 !px-[20px] !py-0">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-3xl">
               Data catalog

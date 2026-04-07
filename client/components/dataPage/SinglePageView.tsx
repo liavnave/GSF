@@ -68,7 +68,7 @@ export const SinglePageView = ({
   }
 
   return (
-    <div className="mt-1 flex h-full min-h-0 w-full flex-1 flex-col justify-start overflow-hidden sm:mt-2">
+    <div className="mt-1 flex h-full min-h-0 w-full flex-1 flex-col justify-start overflow-hidden !p-[20px] sm:mt-2">
       <SinglePageComposer
         header={{
           header: {
