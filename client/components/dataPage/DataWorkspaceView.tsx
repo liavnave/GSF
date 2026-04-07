@@ -98,7 +98,7 @@ export function DataWorkspaceView({ databases, loadError }: DataWorkspaceViewPro
 
   return (
     <div className="flex h-full min-h-[min(70dvh,520px)] flex-1 flex-col gap-6">
-      <header className="shrink-0">
+      <header className="shrink-0 px-3 sm:px-4">
         <Link
           href="/"
           className="group inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-400"
