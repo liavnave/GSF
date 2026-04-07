@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Database, SchemaColumn, SchemaEntity, SchemaTable } from "@/types/datasources";
+import type {
+  Column,
+  ColumnField,
+  Database,
+  Schema,
+  Table,
+} from "@/types/datasources";
 import { DataModels } from "@/enums/datasources";
 
 export type DataTreeProps = {
@@ -114,33 +120,78 @@ function Row({
   );
 }
 
-function ColumnRows({
+function FieldRows({
   depth,
-  columns,
+  fills,
   selectedId,
   hrefPrefix,
 }: {
   depth: number;
-  columns: SchemaColumn[];
+  fills: ColumnField[];
   selectedId?: string;
   hrefPrefix: string;
 }) {
   return (
     <>
-      {columns.map((col) => (
+      {fills.map((fill) => (
         <Row
-          key={col.id}
+          key={fill.id}
           depth={depth}
           open={false}
           onToggle={() => {}}
           hasChildren={false}
-          name={col.name}
-          meta="col"
-          selected={selectedId === col.id}
-          href={`${hrefPrefix}?focus=${encodeURIComponent(col.id)}`}
+          name={fill.name}
+          meta="field"
+          selected={selectedId === fill.id}
+          href={`${hrefPrefix}?focus=${encodeURIComponent(fill.id)}`}
         />
       ))}
     </>
+  );
+}
+
+function ColumnBlock({
+  depth,
+  column,
+  selectedId,
+  hrefPrefix,
+}: {
+  depth: number;
+  column: Column;
+  selectedId?: string;
+  hrefPrefix: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const fills = column.fills ?? [];
+  const hasChildren = fills.length > 0;
+  return (
+    <div>
+      <Row
+        depth={depth}
+        open={open}
+        onToggle={() => setOpen((o) => !o)}
+        hasChildren={hasChildren}
+        name={column.name}
+        meta="col"
+        selected={selectedId === column.id}
+        href={
+          hasChildren ? undefined : `${hrefPrefix}?focus=${encodeURIComponent(column.id)}`
+        }
+        branchHref={
+          hasChildren
+            ? `${hrefPrefix}?focus=${encodeURIComponent(column.id)}`
+            : undefined
+        }
+      />
+      {open && hasChildren ? (
+        <FieldRows
+          depth={depth + 1}
+          fills={fills}
+          selectedId={selectedId}
+          hrefPrefix={hrefPrefix}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -151,7 +202,7 @@ function TableBlock({
   hrefPrefix,
 }: {
   depth: number;
-  table: SchemaTable;
+  table: Table;
   selectedId?: string;
   hrefPrefix: string;
 }) {
@@ -176,14 +227,17 @@ function TableBlock({
             : undefined
         }
       />
-      {open && hasChildren ? (
-        <ColumnRows
-          depth={depth + 1}
-          columns={table.columns}
-          selectedId={selectedId}
-          hrefPrefix={hrefPrefix}
-        />
-      ) : null}
+      {open && hasChildren
+        ? table.columns.map((col) => (
+            <ColumnBlock
+              key={col.id}
+              depth={depth + 1}
+              column={col}
+              selectedId={selectedId}
+              hrefPrefix={hrefPrefix}
+            />
+          ))
+        : null}
     </div>
   );
 }
@@ -195,7 +249,7 @@ function SchemaBlock({
   hrefPrefix,
 }: {
   depth: number;
-  schema: SchemaEntity;
+  schema: Schema;
   selectedId?: string;
   hrefPrefix: string;
 }) {

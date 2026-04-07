@@ -1,4 +1,4 @@
-import type { ConnectionType, DataModels, Usage } from "@/enums/datasources";
+import { DataModels, type ConnectionType, type Usage } from "@/enums/datasources";
 
 export type NameId = {
   id: string;
@@ -17,6 +17,15 @@ export type Tag = {
   rule_id?: string;
   dual?: boolean;
   owner_id?: string;
+};
+
+/** Лист дерева под колонкой: поле / fill (не сама колонка). */
+export type ColumnField = {
+  id: string;
+  name: string;
+  description: string;
+  type: typeof DataModels.FIELD;
+  column: NameId;
 };
 
 export type Column = {
@@ -50,6 +59,8 @@ export type Column = {
   description_suggestion?: string;
   deleted?: boolean;
   owner_id?: string | null;
+  /** Дочерние поля (fills); листья дерева навигации. */
+  fills?: ColumnField[];
 };
 
 export type Table = {
@@ -97,19 +108,18 @@ export type Entity = {
   tags: Tag[];
 };
 
+/** Дочерний узел БД в `Database.schemas`; по `schema.id` запрашиваются таблицы (см. API). */
+export type Schema = Entity;
+
 export type Database = {
   id: string;
   name: string;
   added: string;
   pulled: string;
   connector_type: ConnectionType;
-  schemas: Entity[];
+  schemas: Schema[];
   type: typeof DataModels.DB;
   owner_id: string | null;
 };
 
 export type DataFilters = Record<string, string | string[] | undefined>;
-
-export type SchemaColumn = Column;
-export type SchemaTable = Table;
-export type SchemaEntity = Entity;
