@@ -219,10 +219,10 @@ export const SinglePageComposer = forwardRef<
   return (
     <div
       ref={ref}
-      className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-b-2xl rounded-t-none border border-zinc-200/90 bg-zinc-50/90 shadow-xl shadow-zinc-300/40 ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900/50 dark:shadow-2xl dark:shadow-black/40 dark:ring-white/5"
+      className="box-border flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-b-2xl rounded-t-none border border-zinc-200/90 bg-zinc-50/90 p-4 shadow-xl shadow-zinc-300/40 ring-1 ring-zinc-950/5 sm:p-5 md:p-6 dark:border-zinc-700/90 dark:bg-zinc-900/50 dark:shadow-2xl dark:shadow-black/40 dark:ring-white/5"
     >
       <div
-        className="h-1 shrink-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600"
+        className="h-1 shrink-0 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600"
         aria-hidden
       />
       {header?.errorBanner ? (
