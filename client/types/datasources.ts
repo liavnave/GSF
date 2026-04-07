@@ -1,9 +1,9 @@
 import type { ConnectionType, DataModels, Usage } from "@/enums/datasources";
 
-export interface NameId {
+export type NameId = {
   id: string;
   name: string;
-}
+};
 
 export type TableType =
   | typeof DataModels.TABLE
@@ -11,15 +11,15 @@ export type TableType =
   | typeof DataModels.VIEW
   | typeof DataModels.MATERIALIZED;
 
-export interface Tag {
+export type Tag = {
   id: string;
   name: string;
   rule_id?: string;
   dual?: boolean;
   owner_id?: string;
-}
+};
 
-export interface SchemaColumn {
+export type Column = {
   id: string;
   name: string;
   data_type: string;
@@ -50,9 +50,9 @@ export interface SchemaColumn {
   description_suggestion?: string;
   deleted?: boolean;
   owner_id?: string | null;
-}
+};
 
-export interface SchemaTable {
+export type Table = {
   id: string;
   name: string;
   description: string;
@@ -69,7 +69,7 @@ export interface SchemaTable {
   type: TableType;
   label: DataModels;
   tags: Tag[];
-  columns: SchemaColumn[];
+  columns: Column[];
   owner_id: string | null;
   owner_notes: string | null;
   last_modified: string | null;
@@ -82,28 +82,34 @@ export interface SchemaTable {
   usage: Usage;
   description_suggestion?: string;
   deleted?: boolean;
-}
+};
 
-export interface SchemaEntity {
+export type Entity = {
   id: string;
   added: string;
   description: string | null;
   description_suggestion?: string;
   name: string;
-  tables: SchemaTable[];
+  tables: Table[];
   num_of_tables: number;
   type: typeof DataModels.SCHEMA;
   owner_id: string | null;
   tags: Tag[];
-}
+};
 
-export interface Database {
+export type Database = {
   id: string;
   name: string;
   added: string;
   pulled: string;
   connector_type: ConnectionType;
-  schemas: SchemaEntity[];
+  schemas: Entity[];
   type: typeof DataModels.DB;
   owner_id: string | null;
-}
+};
+
+export type DataFilters = Record<string, string | string[] | undefined>;
+
+export type SchemaColumn = Column;
+export type SchemaTable = Table;
+export type SchemaEntity = Entity;
