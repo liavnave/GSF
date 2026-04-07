@@ -44,31 +44,31 @@ function renderComposerSection(section: ComposerSection): ReactNode {
   switch (section.kind) {
     case "textCard":
       return (
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+        <div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {section.title}
           </h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
             {section.body}
           </p>
         </div>
       );
     case "infoGrid":
       return (
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+        <div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {section.title}
           </h2>
-          <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {section.items.map((item) => (
               <div
                 key={item.label}
-                className="rounded-md border border-zinc-100 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/80"
+                className="rounded-lg border border-zinc-100/90 bg-zinc-50/80 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60"
               >
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                   {item.label}
                 </dt>
-                <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                <dd className="mt-1.5 text-sm text-zinc-900 dark:text-zinc-100">
                   {item.value}
                 </dd>
               </div>
@@ -78,13 +78,13 @@ function renderComposerSection(section: ComposerSection): ReactNode {
       );
     case "dataTable":
       return (
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30">
+        <div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {section.title}
           </h2>
-          <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200/90 dark:border-zinc-700">
             <table className="w-full min-w-[28rem] text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/80">
+              <thead className="border-b border-zinc-200 bg-zinc-100/95 dark:border-zinc-700 dark:bg-zinc-800/90">
                 <tr>
                   {section.columns.map((col) => (
                     <th
@@ -100,7 +100,7 @@ function renderComposerSection(section: ComposerSection): ReactNode {
                 {section.rows.map((row, ri) => (
                   <tr
                     key={ri}
-                    className="border-b border-zinc-100 dark:border-zinc-800"
+                    className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/80 dark:border-zinc-800 dark:hover:bg-zinc-900/50"
                   >
                     {section.columns.map((col) => (
                       <td
@@ -219,22 +219,26 @@ export const SinglePageComposer = forwardRef<
   return (
     <div
       ref={ref}
-      className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
+      className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-0 overflow-hidden rounded-b-2xl rounded-t-none border border-zinc-200/90 bg-zinc-50/90 shadow-xl shadow-zinc-300/40 ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900/50 dark:shadow-2xl dark:shadow-black/40 dark:ring-white/5"
     >
+      <div
+        className="h-1 shrink-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600"
+        aria-hidden
+      />
       {header?.errorBanner ? (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="border-b border-amber-200/90 bg-amber-50 px-7 py-4 text-sm text-amber-950 sm:px-10 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
           {String(header.errorBanner)}
         </div>
       ) : null}
 
-      <header className="border-b border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-950">
+      <header className="border-b border-zinc-200/80 bg-gradient-to-b from-white to-zinc-50/90 px-7 py-6 sm:px-10 sm:py-7 dark:border-zinc-700/80 dark:from-zinc-950 dark:to-zinc-950/90">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-2xl">
               {title}
             </h1>
             {subtitle ? (
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                 {subtitle}
               </p>
             ) : null}
@@ -302,17 +306,17 @@ export const SinglePageComposer = forwardRef<
       </header>
 
       <div
-        className="grid w-full min-h-[min(55vh,520px)] min-w-0 flex-1 gap-0"
+        className="grid min-h-0 w-full min-w-0 flex-1 gap-0 overflow-hidden"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {leftPanel ? (
-          <aside className="flex min-h-0 min-w-0 flex-col border-r border-zinc-200 bg-white/60 dark:border-zinc-700 dark:bg-zinc-950/60">
+          <aside className="flex min-h-0 min-w-0 flex-col border-r border-zinc-200/80 bg-gradient-to-b from-zinc-50/95 to-white dark:border-zinc-700/80 dark:from-zinc-950 dark:to-zinc-950/90">
             {leftPanel.slot ? (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0">
                 {leftPanel.slot}
               </div>
             ) : (
-              <div className="p-3 text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="px-5 py-4 text-sm text-zinc-600 sm:px-6 dark:text-zinc-400">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Left panel
                 </p>
@@ -324,27 +328,32 @@ export const SinglePageComposer = forwardRef<
           </aside>
         ) : null}
 
-        <main className="min-h-0 min-w-0 overflow-y-auto border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+        <main className="min-h-0 min-w-0 overflow-y-auto bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(250,250,250,0.6)_100%)] px-7 py-6 sm:px-10 sm:py-7 dark:bg-[linear-gradient(180deg,rgba(9,9,11,1)_0%,rgba(24,24,27,0.5)_100%)]">
           {sections.length === 0 ? (
-            <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/20">
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                Nothing selected
+            <div className="flex min-h-[14rem] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-zinc-300/90 bg-white/70 px-8 py-12 text-center dark:border-zinc-600 dark:bg-zinc-900/30">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100/90 text-xl dark:bg-emerald-950/60"
+                aria-hidden
+              >
+                ◇
+              </div>
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                Nothing selected yet
               </p>
-              <p className="max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-                Choose a database, schema, table, or column in the tree on the
-                left to load description, owner notes, information, and child
-                entities.
+              <p className="max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Pick a database, schema, table, column, or field in the explorer
+                to load metadata, descriptions, and related entities.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {sections.map((section, i) =>
                 isComposerSection(section) ? (
                   <div key={section.id}>{renderComposerSection(section)}</div>
                 ) : (
                   <section
                     key={i}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-900/30"
+                    className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]"
                   >
                     <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       {sectionTitle(section)}
@@ -379,13 +388,13 @@ export const SinglePageComposer = forwardRef<
         </main>
 
         {rightPanel ? (
-          <aside className="flex min-h-0 min-w-0 flex-col border-l border-zinc-200 bg-white/60 dark:border-zinc-700 dark:bg-zinc-950/60">
+          <aside className="flex min-h-0 min-w-0 flex-col border-l border-zinc-200/80 bg-gradient-to-b from-zinc-50/95 to-white dark:border-zinc-700/80 dark:from-zinc-950 dark:to-zinc-950/90">
             {rightPanel.slot ? (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-4 sm:px-5">
                 {rightPanel.slot}
               </div>
             ) : (
-              <div className="p-3 text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="px-5 py-4 text-sm text-zinc-600 sm:px-6 dark:text-zinc-400">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Right panel
                 </p>
