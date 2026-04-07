@@ -5,6 +5,10 @@ import { ApiError, ResponseWithError } from "./types";
 
 
 const api = axios.create({
+	baseURL:
+		typeof window === "undefined"
+			? (process.env.PYTHON_API_URL ?? "http://127.0.0.1:8000")
+			: undefined,
 	headers: {
 		"Content-Type": "application/json",
 	},

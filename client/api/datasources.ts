@@ -1,6 +1,7 @@
 import { requests } from "./requests";
 import type {
   Column,
+  ColumnField,
   Database,
   DataFilters,
   Entity,
@@ -51,5 +52,9 @@ export const datasources = {
   getColumnById: (column: string) =>
     requests.get<ResponseWithCount<Column>>(
       `/api/datasources/columns/${column}`,
+    ),
+  getFillById: (fillId: string) =>
+    requests.get<ResponseWithCount<ColumnField>>(
+      `/api/datasources/fills/${fillId}`,
     ),
 };
