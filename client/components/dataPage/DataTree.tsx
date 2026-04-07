@@ -19,10 +19,10 @@ export type DataTreeProps = {
 };
 
 function rowClassName(selected: boolean) {
-  return `flex min-h-8 cursor-pointer items-center gap-1 rounded-md text-left text-sm no-underline transition-colors ${
+  return `flex min-h-9 cursor-pointer items-center gap-1 rounded-lg text-left text-sm no-underline transition-colors ${
     selected
-      ? "bg-emerald-100 text-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-50"
-      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
+      ? "bg-emerald-100/95 font-medium text-emerald-950 shadow-sm ring-1 ring-emerald-200/80 dark:bg-emerald-950/45 dark:text-emerald-50 dark:ring-emerald-800/50"
+      : "text-zinc-800 hover:bg-zinc-100/90 dark:text-zinc-200 dark:hover:bg-zinc-800/70"
   }`;
 }
 
@@ -50,8 +50,8 @@ function Row({
   branchHref?: string;
   onClick?: () => void;
 }) {
-  const pad = 8 + depth * 14;
-  const style = { paddingLeft: pad, paddingRight: 8 };
+  const pad = 12 + depth * 12;
+  const style = { paddingLeft: pad, paddingRight: 12 };
 
   const metaEl = (
     <span className="shrink-0 text-[10px] uppercase tracking-wide text-zinc-400">
@@ -350,18 +350,18 @@ export function DataTree({
 
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-950 ${className}`}
+      className={`flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent ${className}`}
     >
-      <div className="shrink-0 border-b border-zinc-200 px-2 py-2 dark:border-zinc-700">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-          Data sources
+      <div className="shrink-0 border-b border-zinc-200/80 bg-gradient-to-r from-emerald-50/80 to-transparent px-4 py-3.5 sm:px-5 dark:border-zinc-700 dark:from-emerald-950/40">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-800/90 dark:text-emerald-400/90">
+          Explorer
         </p>
-        <p className="truncate text-xs text-zinc-400" title={summary}>
+        <p className="mt-1 truncate text-xs leading-snug text-zinc-500 dark:text-zinc-400" title={summary}>
           {summary}
         </p>
       </div>
       <nav
-        className="min-h-0 flex-1 overflow-y-auto py-1"
+        className="flex min-h-0 flex-1 flex-col gap-y-1 overflow-y-auto px-3 py-2 sm:px-4"
         aria-label="Datasource tree"
       >
         {databases.map((database) => (

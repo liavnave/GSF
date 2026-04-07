@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Spinner } from "@nvidia/foundations-react-core";
+import { Spinner } from "@kui/foundations-react";
 import {
   SinglePageComposer,
   type SinglePageComposerProps,
@@ -52,10 +52,13 @@ export const SinglePageView = ({
   if (loading) {
     return (
       <div
-        className="flex h-full min-h-[12rem] w-full items-center justify-center"
+        className="flex h-full min-h-[min(70dvh,480px)] w-full flex-col items-center justify-center gap-4 rounded-2xl border border-zinc-200/80 bg-white/70 px-8 py-12 shadow-lg shadow-zinc-200/30 backdrop-blur-[2px] dark:border-zinc-700/80 dark:bg-zinc-950/50 dark:shadow-none"
         role="status"
       >
         <Spinner aria-label="Loading" />
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          Loading details…
+        </p>
       </div>
     );
   }
