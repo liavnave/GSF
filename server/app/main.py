@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app import neo4j_db
 from app.routers import datasources
 
-app = FastAPI(title="GSF API")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    neo4j_db.close_driver()
+
+
+app = FastAPI(title="GSF API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

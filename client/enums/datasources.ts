@@ -43,6 +43,7 @@ export enum DataModels {
 }
 
 export enum ConnectionType {
+  NEO4J = "neo4j",
   REDSHIFT = "redshift",
   SNOWFLAKE = "snowflake",
   BIG_QUERY = "bigquery",

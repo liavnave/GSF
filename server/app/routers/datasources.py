@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
 
-from app import mock_data
+from app import mock_data, neo4j_db
 
 router = APIRouter()
 
@@ -15,7 +16,11 @@ def _count_payload(data: object) -> dict:
 
 @router.get("/dbs")
 async def list_databases() -> dict:
-    return _count_payload(list(mock_data.DATABASES))
+    try:
+        rows = await run_in_threadpool(neo4j_db.list_databases_as_datasource_payload)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _count_payload(rows)
 
 
 @router.get("/dbs/{db_id}/tables")
