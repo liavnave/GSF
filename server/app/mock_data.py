@@ -31,7 +31,9 @@ def _slug(schema_name: str) -> str:
     return re.sub(r"\s+", "-", schema_name.strip()).lower()
 
 
-def _make_fill(column_nid: dict[str, str], col_id: str, fill_index: int) -> dict[str, Any]:
+def _make_fill(
+    column_nid: dict[str, str], col_id: str, fill_index: int
+) -> dict[str, Any]:
     return {
         "id": f"{col_id}-fill-{fill_index}",
         "name": f"field_{fill_index}",
@@ -94,8 +96,7 @@ def _make_table(
     table_id = f"{schema_ref['id']}-tbl-{table_index}"
     table_ref = _nid(table_id, f"table_{table_index}")
     columns = [
-        _make_column(db_ref, schema_ref, table_ref, i + 1)
-        for i in range(num_columns)
+        _make_column(db_ref, schema_ref, table_ref, i + 1) for i in range(num_columns)
     ]
     return {
         "id": table_id,

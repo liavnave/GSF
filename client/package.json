@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "dev:api": "cd ../server && .venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:api": "cd ../server && uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
     "dev:stack": "concurrently -n next,api -c blue,green \"npm run dev\" \"npm run dev:api\"",
     "build": "next build",
     "start": "next start",
@@ -13,7 +13,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@kui/foundations-react": "^0.607.1",
+    "@kui/foundations-react": "^0.607.2",
     "axios": "^1.14.0",
     "next": "16.2.2",
     "react": "19.2.4",
@@ -36,6 +36,7 @@
     "eslint-config-next": "16.2.2",
     "eslint-plugin-storybook": "^10.3.4",
     "playwright": "^1.59.1",
+    "prettier": "^3.8.1",
     "storybook": "^10.3.4",
     "tailwindcss": "^4",
     "typescript": "^5",
