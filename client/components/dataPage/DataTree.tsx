@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type {
   Column,
@@ -10,6 +10,43 @@ import type {
   Table,
 } from "@/types/datasources";
 import { DataModels } from "@/enums/datasources";
+
+function columnSubtreeContainsFocus(column: Column, focusId: string): boolean {
+  if (column.id === focusId) return true;
+  return (column.fills ?? []).some((f) => f.id === focusId);
+}
+
+function tableSubtreeContainsFocus(table: Table, focusId: string): boolean {
+  if (table.id === focusId) return true;
+  return table.columns.some((c) => columnSubtreeContainsFocus(c, focusId));
+}
+
+function schemaSubtreeContainsFocus(schema: Schema, focusId: string): boolean {
+  if (schema.id === focusId) return true;
+  return schema.tables.some((t) => tableSubtreeContainsFocus(t, focusId));
+}
+
+function databaseSubtreeContainsFocus(database: Database, focusId: string): boolean {
+  if (database.id === focusId) return true;
+  return database.schemas.some((s) => schemaSubtreeContainsFocus(s, focusId));
+}
+
+/** Раскрытие ветки: старт по focus; при смене `focus` в URL — снова раскрыть путь. */
+function useOpenBranch(
+  containsFocus: boolean,
+  selectedId: string | undefined,
+  defaultOpen: boolean,
+) {
+  const [open, setOpen] = useState(() => defaultOpen || containsFocus);
+  const prevSelected = useRef(selectedId);
+  useEffect(() => {
+    if (selectedId !== prevSelected.current) {
+      prevSelected.current = selectedId;
+      if (containsFocus) setOpen(true);
+    }
+  }, [selectedId, containsFocus]);
+  return [open, setOpen] as const;
+}
 
 export type DataTreeProps = {
   databases: Database[];
@@ -161,7 +198,9 @@ function ColumnBlock({
   selectedId?: string;
   hrefPrefix: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const containsFocus =
+    selectedId != null && columnSubtreeContainsFocus(column, selectedId);
+  const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
   const fills = column.fills ?? [];
   const hasChildren = fills.length > 0;
   return (
@@ -206,7 +245,9 @@ function TableBlock({
   selectedId?: string;
   hrefPrefix: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const containsFocus =
+    selectedId != null && tableSubtreeContainsFocus(table, selectedId);
+  const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
   const hasChildren = table.columns.length > 0;
   return (
     <div>
@@ -253,7 +294,9 @@ function SchemaBlock({
   selectedId?: string;
   hrefPrefix: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const containsFocus =
+    selectedId != null && schemaSubtreeContainsFocus(schema, selectedId);
+  const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
   const hasChildren = schema.tables.length > 0;
   return (
     <div>
@@ -298,7 +341,9 @@ function DatabaseBlock({
   selectedId?: string;
   hrefPrefix: string;
 }) {
-  const [open, setOpen] = useState(true);
+  const containsFocus =
+    selectedId != null && databaseSubtreeContainsFocus(database, selectedId);
+  const [open, setOpen] = useOpenBranch(containsFocus, selectedId, true);
   const hasChildren = database.schemas.length > 0;
   return (
     <div>
