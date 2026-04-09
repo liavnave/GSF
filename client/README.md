@@ -1,20 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) app. **The Python API in `../server` must be running** for `/data` and other API-backed routes. See the **[root README](../README.md)** for full setup (`npm run dev` + `npm run dev:api`, or `npm run dev:stack`).
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Dev server uses **port 3001** by default (`package.json`). Open **http://localhost:3001**.
+
+To run the API as well:
+
+```bash
+npm run dev:api
+# or both at once:
+npm run dev:stack
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
