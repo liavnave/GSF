@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Minimal styles for @nvidia/foundations-react-core Spinner (full KUI: import generated CSS). */
+/* Minimal styles for @kui/foundations-react Spinner (full KUI: import generated CSS). */
 .nv-spinner {
   display: flex;
   flex-direction: column;
