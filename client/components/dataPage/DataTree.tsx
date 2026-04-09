@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type {
   Column,
@@ -38,13 +38,11 @@ function useOpenBranch(
   defaultOpen: boolean,
 ) {
   const [open, setOpen] = useState(() => defaultOpen || containsFocus);
-  const prevSelected = useRef(selectedId);
-  useEffect(() => {
-    if (selectedId !== prevSelected.current) {
-      prevSelected.current = selectedId;
-      if (containsFocus) setOpen(true);
-    }
-  }, [selectedId, containsFocus]);
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
+    if (containsFocus) setOpen(true);
+  }
   return [open, setOpen] as const;
 }
 
