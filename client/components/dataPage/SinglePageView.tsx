@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Spinner } from "@kui/foundations-react";
+import { Spinner } from "@nvidia/foundations-react-core";
 import {
   SinglePageComposer,
   type SinglePageComposerProps,
