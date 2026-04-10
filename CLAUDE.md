@@ -19,8 +19,6 @@ All run from `/client`:
 | `npm run dev:api` | FastAPI on port 8000 |
 | `npm run dev:stack` | Both simultaneously |
 | `npm run lint` | ESLint |
-| `npm run storybook` | Storybook on port 6006 |
-
 From `/server`: `uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`
 
 ## Frontend Rules
@@ -31,7 +29,7 @@ From `/server`: `uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 80
 - **Components**: Arrow function components. No class components.
 - **Styling**: Tailwind CSS 4. Do not write inline styles or separate CSS files for component styling.
 - **Types**: TypeScript strict mode. No `any` without a comment. Types go in `/types`, enums in `/enums`.
-- **Testing**: Vitest + Playwright. New components should have stories in `/stories`.
+- **Testing**: Vitest + Playwright.
 
 ## Backend Rules
 

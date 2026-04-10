@@ -17,28 +17,6 @@ Component name and optional subfolder: $ARGUMENTS
 
 3. If the component lives inside a subfolder that has an `index.ts` barrel file, add the named export and type export to it.
 
-4. Create a Storybook story at `client/stories/<ComponentName>.stories.ts` using:
-   ```ts
-   import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-   import { <ComponentName> } from '@/components/...';
+4. Use the Prettier config: tabs, single quotes, semicolons, trailing commas, 100-char print width.
 
-   const meta = {
-     title: '<Folder>/<ComponentName>',
-     component: <ComponentName>,
-     parameters: { layout: 'centered' },
-     tags: ['autodocs'],
-   } satisfies Meta<typeof <ComponentName>>;
-
-   export default meta;
-   type Story = StoryObj<typeof meta>;
-
-   export const Default: Story = {
-     args: {
-       // fill in required props
-     },
-   };
-   ```
-
-5. Use the Prettier config: tabs, single quotes, semicolons, trailing commas, 100-char print width.
-
-6. Report the files created and any barrel exports updated.
+5. Report the files created and any barrel exports updated.
