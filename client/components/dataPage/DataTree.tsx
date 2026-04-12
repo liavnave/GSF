@@ -1,19 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type {
   Column,
-  ColumnField,
   Database,
   Schema,
   Table,
 } from "@/types/datasources";
 import { DataModels } from "@/enums/datasources";
+import { datasources } from "@/api/datasources";
+
+// ---------------------------------------------------------------------------
+// Focus helpers
+// ---------------------------------------------------------------------------
 
 function columnSubtreeContainsFocus(column: Column, focusId: string): boolean {
-  if (column.id === focusId) return true;
-  return (column.fills ?? []).some((f) => f.id === focusId);
+  return column.id === focusId;
 }
 
 function tableSubtreeContainsFocus(table: Table, focusId: string): boolean {
@@ -31,7 +34,6 @@ function databaseSubtreeContainsFocus(database: Database, focusId: string): bool
   return database.schemas.some((s) => schemaSubtreeContainsFocus(s, focusId));
 }
 
-/** Раскрытие ветки: старт по focus; при смене `focus` в URL — снова раскрыть путь. */
 function useOpenBranch(
   containsFocus: boolean,
   selectedId: string | undefined,
@@ -46,13 +48,46 @@ function useOpenBranch(
   return [open, setOpen] as const;
 }
 
+// ---------------------------------------------------------------------------
+// State updater
+// ---------------------------------------------------------------------------
+
+function mergeColumnsIntoTable(
+  dbs: Database[],
+  tableId: string,
+  columns: Column[],
+): Database[] {
+  return dbs.map((db) => ({
+    ...db,
+    schemas: db.schemas.map((s) => ({
+      ...s,
+      tables: s.tables.map((t) =>
+        t.id === tableId ? { ...t, columns, num_of_columns: columns.length } : t,
+      ),
+    })),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 export type DataTreeProps = {
-  databases: Database[];
+  /**
+   * Initial db → schema → table tree (no columns).
+   * DataTree owns its own state and lazy-loads columns per table.
+   */
+  initialDatabases: Database[];
   selectedId?: string;
   hrefPrefix?: string;
   className?: string;
+  /** Notifies parent after columns are fetched so it can update its own ref. */
+  onTableColumnsLoaded?: (tableId: string, columns: Column[]) => void;
 };
+
+// ---------------------------------------------------------------------------
+// Row UI primitive
+// ---------------------------------------------------------------------------
 
 function rowClassName(selected: boolean) {
   return `flex min-h-9 cursor-pointer items-center gap-1 rounded-lg text-left text-sm no-underline transition-colors ${
@@ -67,6 +102,7 @@ function Row({
   open,
   onToggle,
   hasChildren,
+  loading,
   name,
   meta,
   selected,
@@ -78,11 +114,11 @@ function Row({
   open: boolean;
   onToggle: () => void;
   hasChildren: boolean;
+  loading?: boolean;
   name: string;
   meta: string;
   selected: boolean;
   href?: string;
-  /** Для веток: ссылка на `?focus=` по имени; раскрытие — только по шеврону. */
   branchHref?: string;
   onClick?: () => void;
 }) {
@@ -112,7 +148,7 @@ function Row({
         }
       }}
     >
-      {hasChildren ? (open ? "▼" : "▶") : "·"}
+      {loading ? "…" : hasChildren ? (open ? "▼" : "▶") : "·"}
     </span>
   );
 
@@ -156,35 +192,9 @@ function Row({
   );
 }
 
-function FieldRows({
-  depth,
-  fills,
-  selectedId,
-  hrefPrefix,
-}: {
-  depth: number;
-  fills: ColumnField[];
-  selectedId?: string;
-  hrefPrefix: string;
-}) {
-  return (
-    <>
-      {fills.map((fill) => (
-        <Row
-          key={fill.id}
-          depth={depth}
-          open={false}
-          onToggle={() => {}}
-          hasChildren={false}
-          name={fill.name}
-          meta="field"
-          selected={selectedId === fill.id}
-          href={`${hrefPrefix}?focus=${encodeURIComponent(fill.id)}`}
-        />
-      ))}
-    </>
-  );
-}
+// ---------------------------------------------------------------------------
+// ColumnBlock
+// ---------------------------------------------------------------------------
 
 function ColumnBlock({
   depth,
@@ -197,57 +207,64 @@ function ColumnBlock({
   selectedId?: string;
   hrefPrefix: string;
 }) {
-  const containsFocus =
-    selectedId != null && columnSubtreeContainsFocus(column, selectedId);
+  const containsFocus = selectedId != null && column.id === selectedId;
   const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
-  const fills = column.fills ?? [];
-  const hasChildren = fills.length > 0;
   return (
     <div>
       <Row
         depth={depth}
         open={open}
         onToggle={() => setOpen((o) => !o)}
-        hasChildren={hasChildren}
+        hasChildren={false}
         name={column.name}
         meta="col"
         selected={selectedId === column.id}
-        href={
-          hasChildren ? undefined : `${hrefPrefix}?focus=${encodeURIComponent(column.id)}`
-        }
-        branchHref={
-          hasChildren
-            ? `${hrefPrefix}?focus=${encodeURIComponent(column.id)}`
-            : undefined
-        }
+        href={`${hrefPrefix}?focus=${encodeURIComponent(column.id)}`}
       />
-      {open && hasChildren ? (
-        <FieldRows
-          depth={depth + 1}
-          fills={fills}
-          selectedId={selectedId}
-          hrefPrefix={hrefPrefix}
-        />
-      ) : null}
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// TableBlock — lazy-loads columns on first expand
+// ---------------------------------------------------------------------------
 
 function TableBlock({
   depth,
   table,
   selectedId,
   hrefPrefix,
+  onLoadColumns,
 }: {
   depth: number;
   table: Table;
   selectedId?: string;
   hrefPrefix: string;
+  onLoadColumns: (tableId: string) => void;
 }) {
   const containsFocus =
     selectedId != null && tableSubtreeContainsFocus(table, selectedId);
   const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
-  const hasChildren = table.columns.length > 0;
+  const [fetchedOnce, setFetchedOnce] = useState(false);
+
+  // Use real count from DB — columns[] is populated lazily.
+  const hasChildren = table.num_of_columns > 0;
+
+  useEffect(() => {
+    if (
+      open &&
+      !fetchedOnce &&
+      table.columns.length === 0 &&
+      table.num_of_columns > 0
+    ) {
+      setFetchedOnce(true);
+      onLoadColumns(table.id);
+    }
+  }, [open, fetchedOnce, table.columns.length, table.num_of_columns, table.id, onLoadColumns]);
+
+  const loading =
+    open && fetchedOnce && table.columns.length === 0 && table.num_of_columns > 0;
+
   return (
     <div>
       <Row
@@ -255,11 +272,14 @@ function TableBlock({
         open={open}
         onToggle={() => setOpen((o) => !o)}
         hasChildren={hasChildren}
+        loading={loading}
         name={table.name}
         meta="table"
         selected={selectedId === table.id}
         href={
-          hasChildren ? undefined : `${hrefPrefix}?focus=${encodeURIComponent(table.id)}`
+          hasChildren
+            ? undefined
+            : `${hrefPrefix}?focus=${encodeURIComponent(table.id)}`
         }
         branchHref={
           hasChildren
@@ -267,7 +287,7 @@ function TableBlock({
             : undefined
         }
       />
-      {open && hasChildren
+      {open && table.columns.length > 0
         ? table.columns.map((col) => (
             <ColumnBlock
               key={col.id}
@@ -282,16 +302,22 @@ function TableBlock({
   );
 }
 
+// ---------------------------------------------------------------------------
+// SchemaBlock
+// ---------------------------------------------------------------------------
+
 function SchemaBlock({
   depth,
   schema,
   selectedId,
   hrefPrefix,
+  onLoadColumns,
 }: {
   depth: number;
   schema: Schema;
   selectedId?: string;
   hrefPrefix: string;
+  onLoadColumns: (tableId: string) => void;
 }) {
   const containsFocus =
     selectedId != null && schemaSubtreeContainsFocus(schema, selectedId);
@@ -308,7 +334,9 @@ function SchemaBlock({
         meta="schema"
         selected={selectedId === schema.id}
         href={
-          hasChildren ? undefined : `${hrefPrefix}?focus=${encodeURIComponent(schema.id)}`
+          hasChildren
+            ? undefined
+            : `${hrefPrefix}?focus=${encodeURIComponent(schema.id)}`
         }
         branchHref={
           hasChildren
@@ -324,6 +352,7 @@ function SchemaBlock({
               table={t}
               selectedId={selectedId}
               hrefPrefix={hrefPrefix}
+              onLoadColumns={onLoadColumns}
             />
           ))
         : null}
@@ -331,14 +360,20 @@ function SchemaBlock({
   );
 }
 
+// ---------------------------------------------------------------------------
+// DatabaseBlock
+// ---------------------------------------------------------------------------
+
 function DatabaseBlock({
   database,
   selectedId,
   hrefPrefix,
+  onLoadColumns,
 }: {
   database: Database;
   selectedId?: string;
   hrefPrefix: string;
+  onLoadColumns: (tableId: string) => void;
 }) {
   const containsFocus =
     selectedId != null && databaseSubtreeContainsFocus(database, selectedId);
@@ -373,6 +408,7 @@ function DatabaseBlock({
               schema={s}
               selectedId={selectedId}
               hrefPrefix={hrefPrefix}
+              onLoadColumns={onLoadColumns}
             />
           ))
         : null}
@@ -380,12 +416,31 @@ function DatabaseBlock({
   );
 }
 
+// ---------------------------------------------------------------------------
+// DataTree (root)
+// ---------------------------------------------------------------------------
+
 export function DataTree({
-  databases,
+  initialDatabases,
   selectedId,
   hrefPrefix = "/data",
   className = "",
+  onTableColumnsLoaded,
 }: DataTreeProps) {
+  const [databases, setDatabases] = useState<Database[]>(initialDatabases);
+
+  const loadTableColumns = useCallback(
+    async (tableId: string) => {
+      const res = await datasources.getTableById(tableId);
+      if (res.error === true || !res.data) return;
+      const loadedTable = res.data as Table;
+      const columns = loadedTable.columns ?? [];
+      setDatabases((prev) => mergeColumnsIntoTable(prev, tableId, columns));
+      onTableColumnsLoaded?.(tableId, columns);
+    },
+    [onTableColumnsLoaded],
+  );
+
   const summary = useMemo(
     () =>
       `${databases.length} db · ${databases.map((d) => d.connector_type).join(", ")}`,
@@ -400,7 +455,10 @@ export function DataTree({
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-800/90 dark:text-emerald-400/90">
           Explorer
         </p>
-        <p className="mt-1 truncate text-xs leading-snug text-zinc-500 dark:text-zinc-400" title={summary}>
+        <p
+          className="mt-1 truncate text-xs leading-snug text-zinc-500 dark:text-zinc-400"
+          title={summary}
+        >
           {summary}
         </p>
       </div>
@@ -414,6 +472,7 @@ export function DataTree({
             database={database}
             selectedId={selectedId}
             hrefPrefix={hrefPrefix}
+            onLoadColumns={loadTableColumns}
           />
         ))}
       </nav>

@@ -5,7 +5,6 @@
  */
 import type { SinglePageFormat } from "@/components/dataPage/SinglePageView";
 import type {
-  ColumnField,
   Database,
   Column,
   Entity,
@@ -17,39 +16,16 @@ export const WORKSPACE_ROOT_PARENT_ID = "mock-workspace-root";
 
 export type TreeResolved =
   | { kind: "none" }
-  | { kind: "db"; db: Database }  
+  | { kind: "db"; db: Database }
   | { kind: "schema"; db: Database; schema: Entity }
   | { kind: "table"; db: Database; schema: Entity; table: Table }
   | {
       kind: "column";
       db: Database;
-      schema: Entity; 
-      table: Table;
-      column: Column;
-    }
-  | {
-      kind: "fill";
-      db: Database;
       schema: Entity;
       table: Table;
       column: Column;
-      fill: ColumnField;
     };
-
-function inFills(
-  db: Database,
-  schema: Entity,
-  table: Table,
-  column: Column,
-  focusId: string,
-): TreeResolved | null {
-  for (const fill of column.fills ?? []) {
-    if (fill.id === focusId) {
-      return { kind: "fill", db, schema, table, column, fill };
-    }
-  }
-  return null;
-}
 
 function inColumns(
   db: Database,
@@ -61,8 +37,6 @@ function inColumns(
     if (column.id === focusId) {
       return { kind: "column", db, schema, table, column };
     }
-    const f = inFills(db, schema, table, column, focusId);
-    if (f) return f;
   }
   return null;
 }
@@ -93,7 +67,6 @@ function inSchemas(db: Database, focusId: string): TreeResolved | null {
   return null;
 }
 
-/** Обход дерева БД → схемы → таблицы → колонки → fills (рекурсивные вспомогательные функции). */
 export function resolveTreeNode(
   focusId: string | null,
   databases: Database[],
@@ -137,10 +110,7 @@ function baseCardsForEntity(
   ];
 }
 
-/**
- * Секции по узлу дерева: без focus — пустой массив; DB → схемы; schema → таблицы;
- * table → колонки; column → дочерние fills; fill → карточка поля и список соседей.
- */
+
 export function buildTreeFocusPageFormat(
   focusId: string | null,
   databases: Database[],
@@ -155,7 +125,7 @@ export function buildTreeFocusPageFormat(
         header: {
           title: "All Data",
           subtitle:
-            "Select a database, schema, table, column, or field in the tree.",
+            "Select a database, schema, table, or column in the tree.",
           entityId: workspaceDataId,
           parentId: WORKSPACE_ROOT_PARENT_ID,
         },
@@ -175,10 +145,6 @@ export function buildTreeFocusPageFormat(
             { label: "Added", value: fmtDate(r.db.added) },
             { label: "Last pulled", value: fmtDate(r.db.pulled) },
             { label: "Schemas", value: String(r.db.schemas.length) },
-            {
-              label: "Owner",
-              value: r.db.owner_id ?? "—",
-            },
           ],
         ),
       );
@@ -295,7 +261,6 @@ export function buildTreeFocusPageFormat(
     }
     case "column": {
       const c = r.column;
-      const fills = c.fills ?? [];
       sections.push(
         ...baseCardsForEntity(
           c.description,
@@ -305,23 +270,9 @@ export function buildTreeFocusPageFormat(
             { label: "Table", value: r.table.name },
             { label: "Schema", value: r.schema.name },
             { label: "Nullable", value: c.nullable ? "Yes" : "No" },
-            { label: "Fields", value: String(fills.length) },
           ],
         ),
       );
-      sections.push({
-        kind: "dataTable",
-        id: "child-fills",
-        title: `Fields (${fills.length})`,
-        columns: [
-          { key: "name", label: "Name" },
-          { key: "description", label: "Description" },
-        ],
-        rows: fills.map((f) => ({
-          name: f.name,
-          description: f.description,
-        })),
-      });
       return {
         sections,
         header: {
@@ -330,48 +281,6 @@ export function buildTreeFocusPageFormat(
             subtitle: `Column · ${r.table.name}`,
             entityId: c.id,
             parentId: r.table.id,
-          },
-        },
-      };
-    }
-    case "fill": {
-      const { fill: f, column: c, table: t } = r;
-      const siblings = c.fills ?? [];
-      sections.push(
-        ...baseCardsForEntity(
-          f.description,
-          [
-            { label: "Field", value: f.name },
-            { label: "Column", value: c.name },
-            { label: "Table", value: t.name },
-            { label: "Schema", value: r.schema.name },
-            { label: "Database", value: r.db.name },
-          ],
-        ),
-      );
-      sections.push({
-        kind: "dataTable",
-        id: "sibling-fills",
-        title: `Fields in column (${siblings.length})`,
-        columns: [
-          { key: "name", label: "Name" },
-          { key: "description", label: "Description" },
-          { key: "selected", label: "Selected" },
-        ],
-        rows: siblings.map((x) => ({
-          name: x.name,
-          description: x.description,
-          selected: x.id === f.id ? "Yes" : "No",
-        })),
-      });
-      return {
-        sections,
-        header: {
-          header: {
-            title: f.name,
-            subtitle: `Field · ${c.name}`,
-            entityId: f.id,
-            parentId: c.id,
           },
         },
       };
