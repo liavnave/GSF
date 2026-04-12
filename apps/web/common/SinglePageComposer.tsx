@@ -26,16 +26,6 @@ type EditHeaderProps = {
 	isLoadingUpdate?: boolean;
 };
 
-function sectionTitle(section: unknown): string {
-	if (isComposerSection(section)) return section.title;
-	if (section && typeof section === 'object') {
-		const o = section as Record<string, unknown>;
-		if (typeof o.heading === 'string') return o.heading;
-		if (typeof o.title === 'string') return o.title;
-		if (typeof o.id === 'string') return o.id;
-	}
-	return 'Section';
-}
 
 function renderComposerSection(section: ComposerSection): ReactNode {
 	switch (section.kind) {
@@ -182,7 +172,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 					<ol className="list-decimal space-y-4 pl-5 text-sm">
 						{sections.map((s, i) => (
 							<li key={i} className="text-zinc-700 dark:text-zinc-300">
-								<span className="font-medium">{sectionTitle(s)}</span>
+								<span className="font-medium">{(s as ComposerSection).title}</span>
 							</li>
 						))}
 					</ol>
@@ -339,7 +329,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 											className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]"
 										>
 											<h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-												{sectionTitle(section)}
+												{(section as ComposerSection).title}
 											</h2>
 											<pre className="mt-2 max-h-40 overflow-auto rounded bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
 												{JSON.stringify(section, null, 2)}

@@ -2,11 +2,10 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import type { Params } from '@/types/params';
 import { ApiError, ResponseWithError } from './types';
 
+const isServer = typeof window === 'undefined';
+
 const api = axios.create({
-	baseURL:
-		typeof window === 'undefined'
-			? (process.env.PYTHON_API_URL ?? 'http://127.0.0.1:8000')
-			: undefined,
+	baseURL: isServer ? `${process.env.PYTHON_API_URL ?? 'http://127.0.0.1:8000'}/api` : '/api',
 	headers: {
 		'Content-Type': 'application/json',
 	},

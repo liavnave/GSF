@@ -5,11 +5,7 @@ export type NameId = {
 	name: string;
 };
 
-export type TableType =
-	| typeof DataModels.TABLE
-	| typeof DataModels.EXTERNAL_TABLE
-	| typeof DataModels.VIEW
-	| typeof DataModels.MATERIALIZED;
+export type TableType = typeof DataModels.TABLE | typeof DataModels.VIEW;
 
 export type Tag = {
 	id: string;
