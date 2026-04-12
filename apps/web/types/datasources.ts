@@ -19,15 +19,6 @@ export type Tag = {
 	owner_id?: string;
 };
 
-/** Лист дерева под колонкой: поле / fill (не сама колонка). */
-export type ColumnField = {
-	id: string;
-	name: string;
-	description: string;
-	type: typeof DataModels.FIELD;
-	column: NameId;
-};
-
 export type Column = {
 	id: string;
 	name: string;
@@ -59,8 +50,6 @@ export type Column = {
 	description_suggestion?: string;
 	deleted?: boolean;
 	owner_id?: string | null;
-	/** Дочерние поля (fills); листья дерева навигации. */
-	fills?: ColumnField[];
 };
 
 export type Table = {
@@ -108,7 +97,6 @@ export type Entity = {
 	tags: Tag[];
 };
 
-/** Дочерний узел БД в `Database.schemas`; по `schema.id` запрашиваются таблицы (см. API). */
 export type Schema = Entity;
 
 export type Database = {
