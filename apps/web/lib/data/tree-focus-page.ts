@@ -122,14 +122,10 @@ export function buildTreeFocusPageFormat(
 				...baseCardsForEntity(
 					`Warehouse connection ${r.db.name} (${r.db.connector_type}). ${r.db.schemas.length} schema(s) available.`,
 					[
-						{ label: 'Connector', value: r.db.connector_type },
-						{ label: 'Added', value: fmtDate(r.db.added) },
-						{ label: 'Last pulled', value: fmtDate(r.db.pulled) },
-						{ label: 'Schemas', value: String(r.db.schemas.length) },
-						{
-							label: 'Owner',
-							value: r.db.owner_id ?? '—',
-						},
+					{ label: 'Connector', value: r.db.connector_type },
+					{ label: 'Added', value: fmtDate(r.db.added) },
+					{ label: 'Last pulled', value: fmtDate(r.db.pulled) },
+					{ label: 'Schemas', value: String(r.db.schemas.length) },
 					],
 				),
 			);
@@ -174,18 +170,16 @@ export function buildTreeFocusPageFormat(
 				kind: 'dataTable',
 				id: 'child-tables',
 				title: `Tables (${s.tables.length})`,
-				columns: [
-					{ key: 'name', label: 'Name' },
-					{ key: 'type', label: 'Type' },
-					{ key: 'columns', label: 'Columns' },
-					{ key: 'queries', label: 'Queries' },
-				],
-				rows: s.tables.map((t) => ({
-					name: t.name,
-					type: t.type,
-					columns: String(t.num_of_columns),
-					queries: String(t.num_of_queries),
-				})),
+			columns: [
+				{ key: 'name', label: 'Name' },
+				{ key: 'type', label: 'Type' },
+				{ key: 'columns', label: 'Columns' },
+			],
+			rows: s.tables.map((t) => ({
+				name: t.name,
+				type: t.type,
+				columns: String(t.num_of_columns),
+			})),
 			});
 			return {
 				sections,
