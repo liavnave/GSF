@@ -1,4 +1,4 @@
-import { DataModels, type ConnectionType, type Usage } from '@/enums/datasources';
+import { DataModels, type Usage } from '@/enums/datasources';
 
 export type NameId = {
 	id: string;
@@ -71,7 +71,6 @@ export type Database = {
 	name: string;
 	added: string;
 	pulled: string;
-	connector_type: ConnectionType;
 	schemas: Schema[];
 	type: typeof DataModels.DB;
 };

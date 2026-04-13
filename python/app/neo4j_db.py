@@ -119,12 +119,6 @@ def _column_payload(
         "data_type": col.get("data_type") or "unknown",
         "description": "",
         "last_queried": None,
-        "num_of_aliases": 0,
-        "num_of_attributes": 0,
-        "num_of_const_comparisons": 0,
-        "num_of_field_comparisons": 0,
-        "num_of_queries": 0,
-        "num_of_terms": 0,
         "db": {"id": db_name, "name": db_name},
         "schema": {"id": schema_id(db_name, schema_name), "name": schema_name},
         "table": {"id": table_id(db_name, schema_name, table_name), "name": table_name},
@@ -135,12 +129,9 @@ def _column_payload(
         "scale": None,
         "default_value": None,
         "nullable": True,
-        "owner_notes": None,
         "syntax_example": None,
         "usage": "low",
         "num_of_usage": 0,
-        "related_terms": [],
-        "related_attributes": [],
     }
 
 
@@ -153,26 +144,14 @@ def _table_payload(
         "description": "",
         "last_queried": None,
         "num_of_columns": len(columns),
-        "num_of_queries": 0,
-        "num_of_terms": 0,
-        "num_of_dup": 0,
-        "num_of_filters": 0,
-        "num_of_joins": 0,
-        "num_of_aggregations": 0,
         "db": {"id": db_name, "name": db_name},
         "schema": {"id": schema_id(db_name, schema_name), "name": schema_name},
         "type": "base table",
         "label": "base table",
         "tags": [],
         "columns": columns,
-        "owner_id": None,
-        "owner_notes": None,
         "last_modified": None,
         "created_date": None,
-        "retention_time": None,
-        "row_count": None,
-        "size": None,
-        "related_terms": [],
         "num_of_usage": 0,
         "usage": "low",
     }
@@ -189,7 +168,6 @@ def _schema_payload(
         "tables": tables,
         "num_of_tables": len(tables),
         "type": "schema",
-        "owner_id": None,
         "tags": [],
     }
 
@@ -238,10 +216,8 @@ def list_databases_as_datasource_payload() -> list[dict[str, Any]]:
                 "name": db_name,
                 "added": stamp,
                 "pulled": stamp,
-                "connector_type": "neo4j",
                 "schemas": [],
                 "type": "db",
-                "owner_id": None,
             }
             schemas[db_name] = {}
 
