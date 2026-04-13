@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import neo4j_db
-from app.schemas import connectors, datasources
+from server import neo4j_db
+from server.schemas.router import router as schemas_router
 
 
 @asynccontextmanager
@@ -31,8 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(connectors.router, prefix="/api/connectors", tags=["connectors"])
-app.include_router(datasources.router, prefix="/api/datasources", tags=["datasources"])
+app.include_router(schemas_router, prefix="/api", tags=["datasources", "connectors"])
 
 
 @app.exception_handler(StarletteHTTPException)

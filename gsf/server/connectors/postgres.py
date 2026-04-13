@@ -8,9 +8,7 @@ import pandas as pd
 import psycopg2
 import psycopg2.extras
 
-from app.connectors._nemo_import import get_sql_database_class
-
-SQLDatabase = get_sql_database_class()
+from nemo_retriever.tabular_data.sql_database import SQLDatabase
 
 
 class PostgresDatabase(SQLDatabase):
@@ -154,7 +152,7 @@ class PostgresDatabase(SQLDatabase):
         Returns a summary dict with counts of synced schemas, tables, and
         columns.
         """
-        from app import neo4j_db
+        from server import neo4j_db
 
         tables_df = self.get_tables()
         columns_df = self.get_columns()

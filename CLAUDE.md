@@ -37,7 +37,7 @@ To install dependencies:
 
 - **Formatting/Linting**: Ruff (line-length: 88). Run `uv run ruff check gsf/` and `uv run ruff format gsf/` from repo root before committing.
 - **Dependencies**: Managed with `uv`. Add dependencies via `uv add`, not pip. Do not edit `pyproject.toml` manually for deps.
-- **API prefix**: All routes under `/api/`. Routers live in `gsf/app/routers/`.
+- **API prefix**: All routes under `/api/`. Routes live in `gsf/server/schemas/router.py`, data access in `gsf/server/schemas/dal.py`.
 - **Type hints**: Required on all function signatures.
 - **Exception handlers**: Use plain `def` (not `async def`) for `@app.exception_handler` functions. They perform no async I/O, so synchronous handlers are preferred.
 

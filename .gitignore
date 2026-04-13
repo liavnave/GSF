@@ -14,6 +14,7 @@ node_modules
 
 # testing
 /coverage
+gsf/tests/test_postgres_connector.py
 
 # next.js
 /.next/

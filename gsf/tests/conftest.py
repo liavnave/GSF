@@ -18,13 +18,13 @@ def _mock_neo4j():
     mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
     mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
 
-    with patch("app.neo4j_db.get_driver", return_value=mock_driver):
+    with patch("server.neo4j_db.get_driver", return_value=mock_driver):
         yield mock_driver, mock_session
 
 
 @pytest.fixture()
 def client(_mock_neo4j):
     """FastAPI TestClient with Neo4j mocked out."""
-    from app.main import app
+    from server.main import app
 
     return TestClient(app)

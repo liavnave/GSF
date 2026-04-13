@@ -14,7 +14,7 @@ class TestPostgresTestEndpoint:
         mock_db.__exit__ = MagicMock(return_value=False)
         mock_db.execute.return_value = pd.DataFrame([{"ok": 1}])
 
-        with patch("app.schemas.connectors.PostgresDatabase", return_value=mock_db):
+        with patch("server.schemas.router.PostgresDatabase", return_value=mock_db):
             resp = client.post(
                 "/api/connectors/postgres/test",
                 json={"connection_string": "postgresql://u:p@h/db"},
@@ -27,7 +27,7 @@ class TestPostgresTestEndpoint:
 
     def test_connection_failure(self, client):
         with patch(
-            "app.schemas.connectors.PostgresDatabase",
+            "server.schemas.router.PostgresDatabase",
             side_effect=Exception("connection refused"),
         ):
             resp = client.post(
@@ -80,7 +80,7 @@ class TestPostgresIntrospectEndpoint:
             columns=["database", "schema", "table_name", "view_definition"]
         )
 
-        with patch("app.schemas.connectors.PostgresDatabase", return_value=mock_db):
+        with patch("server.schemas.router.PostgresDatabase", return_value=mock_db):
             resp = client.post(
                 "/api/connectors/postgres/introspect",
                 json={"connection_string": "postgresql://u:p@h/db"},
@@ -104,7 +104,7 @@ class TestPostgresSyncEndpoint:
             "columns": 20,
         }
 
-        with patch("app.schemas.connectors.PostgresDatabase", return_value=mock_db):
+        with patch("server.schemas.router.PostgresDatabase", return_value=mock_db):
             resp = client.post(
                 "/api/connectors/postgres/sync",
                 json={"connection_string": "postgresql://u:p@h/db"},
@@ -125,7 +125,7 @@ class TestPostgresQueryEndpoint:
             [{"id": 1, "name": "alice"}, {"id": 2, "name": "bob"}]
         )
 
-        with patch("app.schemas.connectors.PostgresDatabase", return_value=mock_db):
+        with patch("server.schemas.router.PostgresDatabase", return_value=mock_db):
             resp = client.post(
                 "/api/connectors/postgres/query",
                 json={

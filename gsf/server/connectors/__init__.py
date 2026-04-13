@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from app.connectors._nemo_import import get_sql_database_class
-from app.connectors.postgres import PostgresDatabase
-
-SQLDatabase = get_sql_database_class()
+from nemo_retriever.tabular_data.sql_database import SQLDatabase
+from server.connectors.postgres import PostgresDatabase
 
 __all__ = ["SQLDatabase", "PostgresDatabase"]
