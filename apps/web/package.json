@@ -9,7 +9,7 @@
 		"lint": "eslint"
 	},
 	"dependencies": {
-		"@kui/foundations-react": "^0.607.2",
+		"@nvidia/foundations-react-core": "^0.604.1",
 		"axios": "^1.14.0",
 		"next": "16.2.2",
 		"react": "19.2.4",

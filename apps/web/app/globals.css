@@ -1,8 +1,7 @@
-/* Load KUI before Tailwind so utilities and our overrides win over unlayered KUI resets. */
-@import '@kui/foundations-react/base.css';
+/* Load Tailwind. @nvidia/foundations-react-core ships no standalone base.css. */
 @import 'tailwindcss';
 
-/* Spinner layout tweaks (@kui/foundations-react Spinner). */
+/* Spinner layout tweaks (@nvidia/foundations-react-core Spinner). */
 .nv-spinner {
 	display: flex;
 	flex-direction: column;
@@ -27,9 +26,7 @@
 }
 
 /*
- * KUI ships unlayered `* { margin:0; padding:0 }` after Tailwind in the old import order,
- * which can override layered utilities. `body` beats `*` in specificity — explicit gutters
- * so content never sits flush to the viewport.
+ * Explicit box-sizing so content never sits flush to the viewport.
  */
 body {
 	box-sizing: border-box;

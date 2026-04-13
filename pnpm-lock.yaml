@@ -14,9 +14,9 @@ importers:
 
   apps/web:
     dependencies:
-      '@kui/foundations-react':
-        specifier: ^0.607.2
-        version: 0.607.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@nvidia/foundations-react-core':
+        specifier: ^0.604.1
+        version: 0.604.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       axios:
         specifier: ^1.14.0
         version: 1.15.0
@@ -435,27 +435,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kui-contrib/brand-logo@1.2.1':
-    resolution: {integrity: sha512-IIJ0GBpZ9zxjrr3BwHyFJnSsyrymBbXNJfpHfZ7aURs9LAUGk+4gvwgBI8f7W/sBSgSeNoubFjjrOwi/1zlaCg==, tarball: https://urm.nvidia.com/artifactory/api/npm/sw-ngc-unified-npm-proxy/@kui-contrib/brand-logo/-/@kui-contrib/brand-logo-1.2.1.tgz}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-
-  '@kui/foundations-css@0.607.2':
-    resolution: {integrity: sha512-kstkXDHoFE1Z/WnQVIcYqFi7o6KvADSqWtdUir9LAS4PYx3nP+t97OVT9pbx2wBJVcHVTerS6cmnzyjf5X68pw==, tarball: https://urm.nvidia.com/artifactory/api/npm/sw-ngc-unified-npm-proxy/@kui/foundations-css/-/@kui/foundations-css-0.607.2.tgz}
-
-  '@kui/foundations-react-core@0.607.2':
-    resolution: {integrity: sha512-iz4Wrx1JwOcJ5lW8Vqy8znIyfnGRD2Fr1GPy9wgFvo0bzd5GVrNwFZj7OzwQDr39q3SBQN5bixDDtjNELUVnew==, tarball: https://urm.nvidia.com/artifactory/api/npm/sw-ngc-unified-npm-proxy/@kui/foundations-react-core/-/@kui/foundations-react-core-0.607.2.tgz}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-
-  '@kui/foundations-react@0.607.2':
-    resolution: {integrity: sha512-EBSL6mH2Snn6XsKs4OHSUybYVYeIx1QGngcKdI88Gk2an/2ImBzJLp29/mM5mtig7l2y3zYNuR6aTUyEDyREWA==, tarball: https://urm.nvidia.com/artifactory/api/npm/sw-ngc-unified-npm-proxy/@kui/foundations-react/-/@kui/foundations-react-0.607.2.tgz}
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
@@ -538,6 +517,12 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@nvidia/foundations-react-core@0.604.1':
+    resolution: {integrity: sha512-aHAWRlEn7gKtapN6SP9prmO/a8LIpl5JcBOY5eO8/YB+blLQOkMWVj7MYONjvSPnrdFqi4dICO9IPMAkD/9Xyw==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@oxc-project/types@0.124.0':
     resolution: {integrity: sha512-VBFWMTBvHxS11Z5Lvlr3IWgrwhMTXV+Md+EQF0Xf60+wAdsGFTBx7X7K/hP4pi8N7dcm1RvcHwDxZ16Qx8keUg==}
@@ -3837,54 +3822,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kui-contrib/brand-logo@1.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      clsx: 2.1.1
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-
-  '@kui/foundations-css@0.607.2': {}
-
-  '@kui/foundations-react-core@0.607.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      '@ariakit/react': 0.4.25(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@date-fns/tz': 1.4.1
-      '@shikijs/core': 3.23.0
-      '@shikijs/engine-javascript': 3.23.0
-      '@shikijs/langs': 3.23.0
-      '@shikijs/themes': 3.23.0
-      '@shikijs/types': 3.23.0
-      class-variance-authority: 0.7.1
-      date-fns: 4.1.0
-      fast-equals: 5.4.0
-      isomorphic-dompurify: 2.26.0
-      radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react: 19.2.4
-      react-day-picker: 9.14.0(react@19.2.4)
-      react-dom: 19.2.4(react@19.2.4)
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-      - bufferutil
-      - canvas
-      - supports-color
-      - utf-8-validate
-
-  '@kui/foundations-react@0.607.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      '@kui-contrib/brand-logo': 1.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@kui/foundations-css': 0.607.2
-      '@kui/foundations-react-core': 0.607.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-      - bufferutil
-      - canvas
-      - supports-color
-      - utf-8-validate
-
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.9.2
@@ -3942,6 +3879,31 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@nvidia/foundations-react-core@0.604.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@ariakit/react': 0.4.25(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@date-fns/tz': 1.4.1
+      '@shikijs/core': 3.23.0
+      '@shikijs/engine-javascript': 3.23.0
+      '@shikijs/langs': 3.23.0
+      '@shikijs/themes': 3.23.0
+      '@shikijs/types': 3.23.0
+      class-variance-authority: 0.7.1
+      date-fns: 4.1.0
+      fast-equals: 5.4.0
+      isomorphic-dompurify: 2.26.0
+      radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react: 19.2.4
+      react-day-picker: 9.14.0(react@19.2.4)
+      react-dom: 19.2.4(react@19.2.4)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - bufferutil
+      - canvas
+      - supports-color
+      - utf-8-validate
 
   '@oxc-project/types@0.124.0': {}
 
