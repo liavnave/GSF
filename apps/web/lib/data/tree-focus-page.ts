@@ -110,24 +110,22 @@ export function buildTreeFocusPageFormat(
 		case 'db': {
 			sections.push(
 				...baseCardsForEntity(
-				`Warehouse connection ${r.db.name}. ${r.db.schemas.length} schema(s) available.`,
-				[
-				{ label: 'Schemas', value: String(r.db.schemas.length) },
-				],
+					`Warehouse connection ${r.db.name}. ${r.db.schemas.length} schema(s) available.`,
+					[{ label: 'Schemas', value: String(r.db.schemas.length) }],
 				),
 			);
 			sections.push({
 				kind: 'dataTable',
 				id: 'child-schemas',
 				title: `Schemas (${r.db.schemas.length})`,
-			columns: [
-				{ key: 'name', label: 'Name' },
-				{ key: 'tables', label: 'Tables' },
-			],
-			rows: r.db.schemas.map((s) => ({
-				name: s.name,
-				tables: String(s.num_of_tables),
-			})),
+				columns: [
+					{ key: 'name', label: 'Name' },
+					{ key: 'tables', label: 'Tables' },
+				],
+				rows: r.db.schemas.map((s) => ({
+					name: s.name,
+					tables: String(s.num_of_tables),
+				})),
 			});
 			return {
 				sections,
@@ -150,19 +148,19 @@ export function buildTreeFocusPageFormat(
 					{ label: 'Tables', value: String(s.num_of_tables) },
 				]),
 			);
-		sections.push({
-			kind: 'dataTable',
-			id: 'child-tables',
-			title: `Tables (${s.tables.length})`,
-			columns: [
-				{ key: 'name', label: 'Name' },
-				{ key: 'columns', label: 'Columns' },
-			],
-			rows: s.tables.map((t) => ({
-				name: t.name,
-				columns: String(t.num_of_columns),
-			})),
-		});
+			sections.push({
+				kind: 'dataTable',
+				id: 'child-tables',
+				title: `Tables (${s.tables.length})`,
+				columns: [
+					{ key: 'name', label: 'Name' },
+					{ key: 'columns', label: 'Columns' },
+				],
+				rows: s.tables.map((t) => ({
+					name: t.name,
+					columns: String(t.num_of_columns),
+				})),
+			});
 			return {
 				sections,
 				header: {
@@ -177,28 +175,28 @@ export function buildTreeFocusPageFormat(
 		}
 		case 'table': {
 			const t = r.table;
-		sections.push(
-			...baseCardsForEntity(t.description, [
-				{ label: 'Table', value: t.name },
-				{ label: 'Schema', value: t.schema_name },
-				{ label: 'Database', value: t.database_name },
-				{ label: 'Columns', value: String(t.num_of_columns) },
-			]),
-		);
+			sections.push(
+				...baseCardsForEntity(t.description, [
+					{ label: 'Table', value: t.name },
+					{ label: 'Schema', value: t.schema_name },
+					{ label: 'Database', value: t.database_name },
+					{ label: 'Columns', value: String(t.num_of_columns) },
+				]),
+			);
 			sections.push({
 				kind: 'dataTable',
 				id: 'child-columns',
 				title: `Columns (${t.columns.length})`,
-			columns: [
-				{ key: 'ordinal_position', label: '#' },
-				{ key: 'name', label: 'Name' },
-				{ key: 'data_type', label: 'Type' },
-			],
-			rows: t.columns.map((col) => ({
-				ordinal_position: String(col.ordinal_position),
-				name: col.name,
-				data_type: col.data_type,
-			})),
+				columns: [
+					{ key: 'ordinal_position', label: '#' },
+					{ key: 'name', label: 'Name' },
+					{ key: 'data_type', label: 'Type' },
+				],
+				rows: t.columns.map((col) => ({
+					ordinal_position: String(col.ordinal_position),
+					name: col.name,
+					data_type: col.data_type,
+				})),
 			});
 			return {
 				sections,

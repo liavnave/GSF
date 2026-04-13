@@ -1,12 +1,5 @@
 import { requests } from './requests';
-import type {
-	Column,
-	Database,
-	DataFilters,
-	NameId,
-	Schema,
-	Table,
-} from '@/types/datasources';
+import type { Column, Database, DataFilters, NameId, Schema, Table } from '@/types/datasources';
 import { ResponseWithCount } from './types';
 
 export const datasources = {

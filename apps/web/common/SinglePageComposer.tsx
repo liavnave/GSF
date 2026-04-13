@@ -26,7 +26,6 @@ type EditHeaderProps = {
 	isLoadingUpdate?: boolean;
 };
 
-
 function renderComposerSection(section: ComposerSection): ReactNode {
 	switch (section.kind) {
 		case 'textCard':
