@@ -3,8 +3,8 @@ import type {
 	Column,
 	Database,
 	DataFilters,
-	Entity,
 	NameId,
+	Schema,
 	Table,
 } from '@/types/datasources';
 import { ResponseWithCount } from './types';
@@ -15,8 +15,8 @@ export const datasources = {
 	getTablesByDatabaseId: (dbId: string, filters: DataFilters) =>
 		requests.get<ResponseWithCount<Table[]>>(`datasources/dbs/${dbId}/tables`, filters),
 	getSchemasByDatabaseId: (dbId: string, filters: DataFilters) =>
-		requests.get<ResponseWithCount<Entity[]>>(`datasources/dbs/${dbId}`, filters),
-	getAllSchemas: () => requests.get<Array<Entity & { db: NameId }>>('datasources/schemas'),
+		requests.get<ResponseWithCount<Schema[]>>(`datasources/dbs/${dbId}`, filters),
+	getAllSchemas: () => requests.get<Array<Schema & { db: NameId }>>('datasources/schemas'),
 	getTablesBySchemaId: (schemaId: string, filters: DataFilters) =>
 		requests.get<ResponseWithCount<Table[]>>(`datasources/schemas/${schemaId}`, filters),
 	getColumnsBySchemaId: (schemaId: string, filters: DataFilters) =>

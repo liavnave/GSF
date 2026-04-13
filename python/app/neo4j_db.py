@@ -119,21 +119,10 @@ def _column_payload(
         "id": column_id(db_name, schema_name, table_name, col_name),
         "name": col_name,
         "data_type": col.get("data_type") or "unknown",
-        "description": "",
-        "last_queried": None,
-        "db": {"id": db_name, "name": db_name},
-        "schema": {"id": schema_id(db_name, schema_name), "name": schema_name},
-        "table": {"id": table_id(db_name, schema_name, table_name), "name": table_name},
-        "label": "column",
-        "tags": [],
-        "type": "column",
-        "length": None,
-        "scale": None,
-        "default_value": None,
-        "nullable": True,
-        "syntax_example": None,
-        "usage": "low",
-        "num_of_usage": 0,
+        "database_name": db_name,
+        "schema_name": schema_name,
+        "table_name": table_name,
+        "ordinal_position": col.get("ordinal_position") or 0,
     }
 
 
@@ -144,33 +133,22 @@ def _table_payload(
         "id": table_id(db_name, schema_name, table_name),
         "name": table_name,
         "description": "",
-        "last_queried": None,
+        "database_name": db_name,
+        "schema_name": schema_name,
         "num_of_columns": len(columns),
-        "db": {"id": db_name, "name": db_name},
-        "schema": {"id": schema_id(db_name, schema_name), "name": schema_name},
-        "type": "base table",
-        "label": "base table",
-        "tags": [],
         "columns": columns,
-        "last_modified": None,
-        "created_date": None,
-        "num_of_usage": 0,
-        "usage": "low",
     }
 
 
 def _schema_payload(
-    db_name: str, schema_name: str, tables: list[dict[str, Any]], stamp: str
+    db_name: str, schema_name: str, tables: list[dict[str, Any]]
 ) -> dict[str, Any]:
     return {
         "id": schema_id(db_name, schema_name),
         "name": schema_name,
-        "added": stamp,
-        "description": None,
-        "tables": tables,
+        "database_name": db_name,
         "num_of_tables": len(tables),
-        "type": "schema",
-        "tags": [],
+        "tables": tables,
     }
 
 
@@ -187,7 +165,6 @@ def list_databases_as_datasource_payload() -> list[dict[str, Any]]:
     so the client knows whether the table is expandable.
     """
     driver = get_driver()
-    stamp = _iso_utc_z()
     try:
         with driver.session(database=CATALOG_DB) as session:
             result = session.run(
@@ -217,15 +194,12 @@ def list_databases_as_datasource_payload() -> list[dict[str, Any]]:
             dbs[db_name] = {
                 "id": db_name,
                 "name": db_name,
-                "added": stamp,
-                "pulled": stamp,
                 "schemas": [],
-                "type": "db",
             }
             schemas[db_name] = {}
 
         if s_name not in schemas[db_name]:
-            schema = _schema_payload(db_name, s_name, [], stamp)
+            schema = _schema_payload(db_name, s_name, [])
             schemas[db_name][s_name] = schema
             dbs[db_name]["schemas"].append(schema)
 
@@ -305,7 +279,6 @@ def list_tables_for_schema(db_name: str, s_name: str) -> list[dict[str, Any]]:
 def list_all_schemas() -> list[dict[str, Any]]:
     """Return all Schema payloads (tables stripped) with a `db` NameId field."""
     driver = get_driver()
-    stamp = _iso_utc_z()
     try:
         with driver.session(database=CATALOG_DB) as session:
             result = session.run(
@@ -325,7 +298,7 @@ def list_all_schemas() -> list[dict[str, Any]]:
     for r in rows:
         db_name: str = r["db_name"]
         s_name: str = r["schema_name"]
-        payload = _schema_payload(db_name, s_name, [], stamp)
+        payload = _schema_payload(db_name, s_name, [])
         payload["num_of_tables"] = r["tbl_count"]
         payload["db"] = {"id": db_name, "name": db_name}
         out.append(payload)
@@ -357,7 +330,11 @@ def list_columns_for_schema(db_name: str, s_name: str) -> list[dict[str, Any]]:
             db_name,
             s_name,
             r["table_name"],
-            {"name": r["col_name"], "data_type": r["data_type"]},
+            {
+                "name": r["col_name"],
+                "data_type": r["data_type"],
+                "ordinal_position": r["ordinal_position"],
+            },
         )
         for r in rows
     ]
@@ -388,7 +365,11 @@ def list_columns_for_database(db_name: str) -> list[dict[str, Any]]:
             db_name,
             r["schema_name"],
             r["table_name"],
-            {"name": r["col_name"], "data_type": r["data_type"]},
+            {
+                "name": r["col_name"],
+                "data_type": r["data_type"],
+                "ordinal_position": r["ordinal_position"],
+            },
         )
         for r in rows
     ]
@@ -437,7 +418,11 @@ def get_table_by_id(db_name: str, s_name: str, t_name: str) -> dict[str, Any] | 
             db_name,
             s_name,
             t_name,
-            {"name": r["col_name"], "data_type": r["data_type"]},
+            {
+                "name": r["col_name"],
+                "data_type": r["data_type"],
+                "ordinal_position": r["ordinal_position"],
+            },
         )
         for r in col_rows
     ]
@@ -456,7 +441,7 @@ def get_column_by_id(
                 MATCH (:Table {database_name: $db_name, schema_name: $schema_name,
                                name: $table_name})-[:HAS_COLUMN]->
                       (c:Column {name: $col_name})
-                RETURN c.data_type AS data_type
+                RETURN c.data_type AS data_type, c.ordinal_position AS ordinal_position
                 """,
                 db_name=db_name,
                 schema_name=s_name,
@@ -470,5 +455,12 @@ def get_column_by_id(
         return None
 
     return _column_payload(
-        db_name, s_name, t_name, {"name": col_name, "data_type": row["data_type"]}
+        db_name,
+        s_name,
+        t_name,
+        {
+            "name": col_name,
+            "data_type": row["data_type"],
+            "ordinal_position": row["ordinal_position"],
+        },
     )

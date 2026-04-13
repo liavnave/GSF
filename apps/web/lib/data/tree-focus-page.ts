@@ -63,16 +63,6 @@ export function resolveTreeNode(focusId: string | null, databases: Database[]): 
 	return { kind: 'none' };
 }
 
-function fmtDate(iso: string): string {
-	try {
-		return new Intl.DateTimeFormat('en', {
-			dateStyle: 'medium',
-		}).format(new Date(iso));
-	} catch {
-		return iso;
-	}
-}
-
 function baseCardsForEntity(
 	description: string,
 	items: { label: string; value: string }[],
@@ -122,8 +112,6 @@ export function buildTreeFocusPageFormat(
 				...baseCardsForEntity(
 				`Warehouse connection ${r.db.name}. ${r.db.schemas.length} schema(s) available.`,
 				[
-				{ label: 'Added', value: fmtDate(r.db.added) },
-				{ label: 'Last pulled', value: fmtDate(r.db.pulled) },
 				{ label: 'Schemas', value: String(r.db.schemas.length) },
 				],
 				),
@@ -132,16 +120,14 @@ export function buildTreeFocusPageFormat(
 				kind: 'dataTable',
 				id: 'child-schemas',
 				title: `Schemas (${r.db.schemas.length})`,
-				columns: [
-					{ key: 'name', label: 'Name' },
-					{ key: 'description', label: 'Description' },
-					{ key: 'tables', label: 'Tables' },
-				],
-				rows: r.db.schemas.map((s) => ({
-					name: s.name,
-					description: s.description ?? '—',
-					tables: String(s.num_of_tables),
-				})),
+			columns: [
+				{ key: 'name', label: 'Name' },
+				{ key: 'tables', label: 'Tables' },
+			],
+			rows: r.db.schemas.map((s) => ({
+				name: s.name,
+				tables: String(s.num_of_tables),
+			})),
 			});
 			return {
 				sections,
@@ -158,28 +144,25 @@ export function buildTreeFocusPageFormat(
 		case 'schema': {
 			const s = r.schema;
 			sections.push(
-				...baseCardsForEntity(s.description ?? `Schema ${s.name} in ${r.db.name}.`, [
+				...baseCardsForEntity(`Schema ${s.name} in ${s.database_name}.`, [
 					{ label: 'Schema', value: s.name },
-					{ label: 'Added', value: fmtDate(s.added) },
+					{ label: 'Database', value: s.database_name },
 					{ label: 'Tables', value: String(s.num_of_tables) },
-					{ label: 'Database', value: r.db.name },
 				]),
 			);
-			sections.push({
-				kind: 'dataTable',
-				id: 'child-tables',
-				title: `Tables (${s.tables.length})`,
+		sections.push({
+			kind: 'dataTable',
+			id: 'child-tables',
+			title: `Tables (${s.tables.length})`,
 			columns: [
 				{ key: 'name', label: 'Name' },
-				{ key: 'type', label: 'Type' },
 				{ key: 'columns', label: 'Columns' },
 			],
 			rows: s.tables.map((t) => ({
 				name: t.name,
-				type: t.type,
 				columns: String(t.num_of_columns),
 			})),
-			});
+		});
 			return {
 				sections,
 				header: {
@@ -194,31 +177,28 @@ export function buildTreeFocusPageFormat(
 		}
 		case 'table': {
 			const t = r.table;
-			sections.push(
-				...baseCardsForEntity(t.description, [
-					{ label: 'Table', value: t.name },
-					{ label: 'Schema', value: r.schema.name },
-					{ label: 'Database', value: r.db.name },
-					{ label: 'Last queried', value: fmtDate(t.last_queried) },
-					{ label: 'Columns', value: String(t.num_of_columns) },
-				]),
-			);
+		sections.push(
+			...baseCardsForEntity(t.description, [
+				{ label: 'Table', value: t.name },
+				{ label: 'Schema', value: t.schema_name },
+				{ label: 'Database', value: t.database_name },
+				{ label: 'Columns', value: String(t.num_of_columns) },
+			]),
+		);
 			sections.push({
 				kind: 'dataTable',
 				id: 'child-columns',
 				title: `Columns (${t.columns.length})`,
-				columns: [
-					{ key: 'name', label: 'Name' },
-					{ key: 'data_type', label: 'Type' },
-					{ key: 'nullable', label: 'Nullable' },
-					{ key: 'usage', label: 'Usage' },
-				],
-				rows: t.columns.map((col) => ({
-					name: col.name,
-					data_type: col.data_type,
-					nullable: col.nullable ? 'Yes' : 'No',
-					usage: col.usage,
-				})),
+			columns: [
+				{ key: 'ordinal_position', label: '#' },
+				{ key: 'name', label: 'Name' },
+				{ key: 'data_type', label: 'Type' },
+			],
+			rows: t.columns.map((col) => ({
+				ordinal_position: String(col.ordinal_position),
+				name: col.name,
+				data_type: col.data_type,
+			})),
 			});
 			return {
 				sections,
@@ -235,12 +215,12 @@ export function buildTreeFocusPageFormat(
 		case 'column': {
 			const c = r.column;
 			sections.push(
-				...baseCardsForEntity(c.description, [
+				...baseCardsForEntity(`Column ${c.name} in ${c.table_name}.`, [
 					{ label: 'Column', value: c.name },
 					{ label: 'Data type', value: c.data_type },
-					{ label: 'Table', value: r.table.name },
-					{ label: 'Schema', value: r.schema.name },
-					{ label: 'Nullable', value: c.nullable ? 'Yes' : 'No' },
+					{ label: 'Table', value: c.table_name },
+					{ label: 'Schema', value: c.schema_name },
+					{ label: 'Position', value: String(c.ordinal_position) },
 				]),
 			);
 			return {
@@ -248,7 +228,7 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: c.name,
-						subtitle: `Column · ${r.table.name}`,
+						subtitle: `Column · ${c.table_name}`,
 						entityId: c.id,
 						parentId: r.table.id,
 					},
