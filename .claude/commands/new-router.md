@@ -17,15 +17,15 @@ Router name and URL prefix: $ARGUMENTS
 
 
    @router.get("/")
-   async def list_<name>() -> dict:
+   def list_<name>() -> dict:
        return {"data": [], "count": 0}
 
 
    @router.get("/{item_id}")
-   async def get_<singular>(item_id: str) -> dict:
+   def get_<singular>(item_id: str) -> dict:
        raise HTTPException(status_code=404, detail="Not found")
    ```
-   - All route handlers must be `async`.
+   - All route handlers must be plain `def` (not `async def`). The neo4j layer is synchronous; there is no async I/O in route handlers.
    - All route handlers must have return type annotations.
    - Helper/private functions are prefixed with `_`.
    - Raise `HTTPException` for error responses.

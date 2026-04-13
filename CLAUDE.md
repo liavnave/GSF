@@ -41,6 +41,7 @@ To run a single app individually:
 - **Dependencies**: Managed with `uv`. Add dependencies via `uv add`, not pip. Do not edit `pyproject.toml` manually for deps.
 - **API prefix**: All routes under `/api/`. Routers live in `python/app/routers/`.
 - **Type hints**: Required on all function signatures.
+- **Exception handlers**: Use plain `def` (not `async def`) for `@app.exception_handler` functions. They perform no async I/O, so synchronous handlers are preferred.
 
 ## Git
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from fastapi.concurrency import run_in_threadpool
 
 from app import neo4j_db
 
@@ -36,18 +35,18 @@ def _parse_column_or_404(column_id: str) -> tuple[str, str, str, str]:
 
 
 @router.get("/dbs")
-async def list_databases() -> dict:
+def list_databases() -> dict:
     try:
-        rows = await run_in_threadpool(neo4j_db.list_databases_as_datasource_payload)
+        rows = neo4j_db.list_databases_as_datasource_payload()
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return _count_payload(rows)
 
 
 @router.get("/dbs/{db_id}/tables")
-async def tables_by_database(db_id: str) -> dict:
+def tables_by_database(db_id: str) -> dict:
     try:
-        data = await run_in_threadpool(neo4j_db.list_tables_for_database, db_id)
+        data = neo4j_db.list_tables_for_database(db_id)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     if not data:
@@ -56,9 +55,9 @@ async def tables_by_database(db_id: str) -> dict:
 
 
 @router.get("/dbs/{db_id}")
-async def schemas_by_database(db_id: str) -> dict:
+def schemas_by_database(db_id: str) -> dict:
     try:
-        data = await run_in_threadpool(neo4j_db.list_schemas_for_database, db_id)
+        data = neo4j_db.list_schemas_for_database(db_id)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     if not data:
@@ -67,39 +66,37 @@ async def schemas_by_database(db_id: str) -> dict:
 
 
 @router.get("/schemas")
-async def all_schemas() -> list:
+def all_schemas() -> list:
     try:
-        return await run_in_threadpool(neo4j_db.list_all_schemas)
+        return neo4j_db.list_all_schemas()
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
 @router.get("/schemas/{schema_id}/columns")
-async def columns_by_schema(schema_id: str) -> dict:
+def columns_by_schema(schema_id: str) -> dict:
     db_name, s_name = _parse_schema_or_404(schema_id)
     try:
-        data = await run_in_threadpool(
-            neo4j_db.list_columns_for_schema, db_name, s_name
-        )
+        data = neo4j_db.list_columns_for_schema(db_name, s_name)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return _count_payload(data)
 
 
 @router.get("/schemas/{schema_id}")
-async def tables_by_schema(schema_id: str) -> dict:
+def tables_by_schema(schema_id: str) -> dict:
     db_name, s_name = _parse_schema_or_404(schema_id)
     try:
-        data = await run_in_threadpool(neo4j_db.list_tables_for_schema, db_name, s_name)
+        data = neo4j_db.list_tables_for_schema(db_name, s_name)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return _count_payload(data)
 
 
 @router.get("/dbs/{db_id}/columns")
-async def columns_by_database(db_id: str) -> dict:
+def columns_by_database(db_id: str) -> dict:
     try:
-        data = await run_in_threadpool(neo4j_db.list_columns_for_database, db_id)
+        data = neo4j_db.list_columns_for_database(db_id)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     if not data:
@@ -108,10 +105,10 @@ async def columns_by_database(db_id: str) -> dict:
 
 
 @router.get("/tables/{table_id}")
-async def table_by_id(table_id: str) -> dict:
+def table_by_id(table_id: str) -> dict:
     db_name, s_name, t_name = _parse_table_or_404(table_id)
     try:
-        t = await run_in_threadpool(neo4j_db.get_table_by_id, db_name, s_name, t_name)
+        t = neo4j_db.get_table_by_id(db_name, s_name, t_name)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     if t is None:
@@ -120,12 +117,10 @@ async def table_by_id(table_id: str) -> dict:
 
 
 @router.get("/columns/{column_id}")
-async def column_by_id(column_id: str) -> dict:
+def column_by_id(column_id: str) -> dict:
     db_name, s_name, t_name, col_name = _parse_column_or_404(column_id)
     try:
-        c = await run_in_threadpool(
-            neo4j_db.get_column_by_id, db_name, s_name, t_name, col_name
-        )
+        c = neo4j_db.get_column_by_id(db_name, s_name, t_name, col_name)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     if c is None:

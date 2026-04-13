@@ -35,7 +35,7 @@ app.include_router(datasources.router, prefix="/api/datasources", tags=["datasou
 
 
 @app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(
+def http_exception_handler(
     _request,
     exc: StarletteHTTPException,
 ) -> JSONResponse:
@@ -45,7 +45,7 @@ async def http_exception_handler(
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(
+def validation_exception_handler(
     _request,
     exc: RequestValidationError,
 ) -> JSONResponse:
@@ -57,5 +57,5 @@ async def validation_exception_handler(
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
+def health() -> dict[str, str]:
     return {"status": "ok"}
