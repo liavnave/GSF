@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import neo4j_db
-from app.routers import connectors, datasources
+from app.schemas import connectors, datasources
 
 
 @asynccontextmanager
