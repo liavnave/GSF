@@ -4,32 +4,25 @@ Generative semantic fabric.
 
 ## Running locally
 
-This is a **Turborepo** monorepo managed by **pnpm**. The **web app** (`apps/web`) and the **Python API** (`python/`) must both be running. The `/data` page loads databases through Next.js rewrites to `http://127.0.0.1:8000` (see `apps/web/next.config.ts`).
+The **frontend** (`frontend/`) and the **Python API** (`gsf/`) must both be running.
 
 ### One-time setup
 
 ```bash
 pnpm install
+uv sync
 ```
-
-The Python API uses [uv](https://docs.astral.sh/uv/) — dependencies are installed automatically on first run.
 
 ### Start development
 
-From the repo root:
+From the repo root, run each in a separate terminal:
 
 ```bash
-pnpm dev
+pnpm dev        # Next.js on port 3000
+pnpm dev:api    # FastAPI on port 3001
 ```
 
-This runs **Turborepo**, which starts both services in parallel:
-
-- **Next.js** on **port 3001**
-- **FastAPI** on **port 8000**
-
-Then open **http://localhost:3001**.
-
-If the API is not running, `/data` will show an error such as `ECONNREFUSED 127.0.0.1:8000`.
+Then open **http://localhost:3000**.
 
 ### Optional
 

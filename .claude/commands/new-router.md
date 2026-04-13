@@ -7,7 +7,7 @@ Router name and URL prefix: $ARGUMENTS
 
 1. Parse the router name and prefix from $ARGUMENTS.
 
-2. Create `python/app/routers/<name>.py` following this exact pattern:
+2. Create `gsf/app/routers/<name>.py` following this exact pattern:
    ```python
    from __future__ import annotations
 
@@ -30,13 +30,13 @@ Router name and URL prefix: $ARGUMENTS
    - Helper/private functions are prefixed with `_`.
    - Raise `HTTPException` for error responses.
 
-3. Register the router in `python/app/main.py`:
+3. Register the router in `gsf/app/main.py`:
    ```python
    from app.routers import <name>
    app.include_router(<name>.router, prefix="<prefix>", tags=["<name>"])
    ```
    Add the import and `include_router` call in the correct location, following the existing pattern.
 
-4. Run `uv run ruff check .` from `/python` and fix any issues.
+4. Run `uv run ruff check gsf/` from the repo root and fix any issues.
 
 5. Report the files created and modified.

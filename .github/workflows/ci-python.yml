@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'python/**'
+      - 'gsf/**'
 
 jobs:
   lint_and_format:
@@ -24,11 +24,11 @@ jobs:
         with:
           version: '0.15.9'
           args: check
-          src: './python'
+          src: './gsf'
 
       - name: Ruff format check
         uses: astral-sh/ruff-action@v3
         with:
           version: '0.15.9'
           args: format --check
-          src: './python'
+          src: './gsf'

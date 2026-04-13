@@ -7,14 +7,14 @@ Leave blank to format everything. Pass `client` or `server` to format only that 
 
 Run the appropriate formatters based on $ARGUMENTS:
 
-**Frontend (client)** — run from `apps/web/`:
+**Frontend (client)** — run from repo root:
 ```bash
-npx prettier --write .
+pnpm format
 ```
 
-**Backend (server)** — run from `python/`:
+**Backend (server)** — run from repo root:
 ```bash
-uv run ruff format .
+uv run ruff format gsf/
 ```
 
 Run both unless $ARGUMENTS specifies only one side.

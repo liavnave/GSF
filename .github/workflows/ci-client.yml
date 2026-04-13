@@ -6,11 +6,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'apps/**'
-      - 'packages/**'
+      - 'frontend/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'turbo.json'
 
 jobs:
   lint_and_build:
@@ -50,7 +48,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Prettier check
-        run: pnpm --filter client exec prettier --check .
+        run: pnpm format:check
 
       - name: ESLint
         run: pnpm lint

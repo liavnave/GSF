@@ -7,14 +7,14 @@ Leave blank to lint everything. Pass `client` or `server` to lint only that side
 
 Run the appropriate commands based on $ARGUMENTS:
 
-**Frontend (client)** — run from `apps/web/`:
+**Frontend (client)** — run from repo root:
 ```bash
-npm run lint
+pnpm lint
 ```
 
-**Backend (server)** — run from `python/`:
+**Backend (server)** — run from repo root:
 ```bash
-uv run ruff check .
+uv run ruff check gsf/
 ```
 
 Run both unless $ARGUMENTS specifies only one side.

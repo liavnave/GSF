@@ -5,8 +5,8 @@ Component name and optional subfolder: $ARGUMENTS
 ## Instructions
 
 1. Determine the component name and target directory from $ARGUMENTS.
-   - If a subfolder is given (e.g. `dataPage/MyComponent`), place the file at `apps/web/components/<subfolder>/<ComponentName>.tsx`.
-   - Otherwise place it at `apps/web/components/<ComponentName>.tsx`.
+   - If a subfolder is given (e.g. `dataPage/MyComponent`), place the file at `frontend/components/<subfolder>/<ComponentName>.tsx`.
+   - Otherwise place it at `frontend/components/<ComponentName>.tsx`.
 
 2. Create `<ComponentName>.tsx` following this exact pattern:
    - Include `"use client";` at the top only if the component uses browser APIs, event handlers, useState, useEffect, or other client-side hooks. Omit it for purely presentational components that could be server-rendered.
