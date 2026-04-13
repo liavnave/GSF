@@ -120,13 +120,12 @@ export function buildTreeFocusPageFormat(
 		case 'db': {
 			sections.push(
 				...baseCardsForEntity(
-					`Warehouse connection ${r.db.name} (${r.db.connector_type}). ${r.db.schemas.length} schema(s) available.`,
-					[
-					{ label: 'Connector', value: r.db.connector_type },
-					{ label: 'Added', value: fmtDate(r.db.added) },
-					{ label: 'Last pulled', value: fmtDate(r.db.pulled) },
-					{ label: 'Schemas', value: String(r.db.schemas.length) },
-					],
+				`Warehouse connection ${r.db.name}. ${r.db.schemas.length} schema(s) available.`,
+				[
+				{ label: 'Added', value: fmtDate(r.db.added) },
+				{ label: 'Last pulled', value: fmtDate(r.db.pulled) },
+				{ label: 'Schemas', value: String(r.db.schemas.length) },
+				],
 				),
 			);
 			sections.push({
@@ -149,7 +148,7 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: r.db.name,
-						subtitle: `${r.db.connector_type} · database`,
+						subtitle: 'database',
 						entityId: r.db.id,
 						parentId: workspaceDataId,
 					},

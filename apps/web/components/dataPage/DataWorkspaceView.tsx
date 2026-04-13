@@ -192,7 +192,7 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
           </div>
           <div className="flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300">
             <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-            {workspaceDb.connector_type}
+            {workspaceDb.name}
           </div>
         </div>
       </header>

@@ -78,6 +78,7 @@ def _iso_utc_z() -> str:
 # ID helpers
 # ---------------------------------------------------------------------------
 
+
 def schema_id(db_name: str, schema_name: str) -> str:
     return f"{db_name}|{schema_name}"
 
@@ -108,6 +109,7 @@ def parse_column_id(cid: str) -> tuple[str, str, str, str] | None:
 # ---------------------------------------------------------------------------
 # Payload builders
 # ---------------------------------------------------------------------------
+
 
 def _column_payload(
     db_name: str, schema_name: str, table_name: str, col: dict[str, Any]
@@ -175,6 +177,7 @@ def _schema_payload(
 # ---------------------------------------------------------------------------
 # Graph queries
 # ---------------------------------------------------------------------------
+
 
 def list_databases_as_datasource_payload() -> list[dict[str, Any]]:
     """Return Database → Schema → Table tree.
@@ -351,8 +354,10 @@ def list_columns_for_schema(db_name: str, s_name: str) -> list[dict[str, Any]]:
 
     return [
         _column_payload(
-            db_name, s_name, r["table_name"],
-            {"name": r["col_name"], "data_type": r["data_type"]}
+            db_name,
+            s_name,
+            r["table_name"],
+            {"name": r["col_name"], "data_type": r["data_type"]},
         )
         for r in rows
     ]
@@ -380,8 +385,10 @@ def list_columns_for_database(db_name: str) -> list[dict[str, Any]]:
 
     return [
         _column_payload(
-            db_name, r["schema_name"], r["table_name"],
-            {"name": r["col_name"], "data_type": r["data_type"]}
+            db_name,
+            r["schema_name"],
+            r["table_name"],
+            {"name": r["col_name"], "data_type": r["data_type"]},
         )
         for r in rows
     ]
@@ -427,8 +434,10 @@ def get_table_by_id(db_name: str, s_name: str, t_name: str) -> dict[str, Any] | 
 
     columns = [
         _column_payload(
-            db_name, s_name, t_name,
-            {"name": r["col_name"], "data_type": r["data_type"]}
+            db_name,
+            s_name,
+            t_name,
+            {"name": r["col_name"], "data_type": r["data_type"]},
         )
         for r in col_rows
     ]
@@ -461,6 +470,5 @@ def get_column_by_id(
         return None
 
     return _column_payload(
-        db_name, s_name, t_name,
-        {"name": col_name, "data_type": row["data_type"]}
+        db_name, s_name, t_name, {"name": col_name, "data_type": row["data_type"]}
     )

@@ -78,7 +78,9 @@ async def all_schemas() -> list:
 async def columns_by_schema(schema_id: str) -> dict:
     db_name, s_name = _parse_schema_or_404(schema_id)
     try:
-        data = await run_in_threadpool(neo4j_db.list_columns_for_schema, db_name, s_name)
+        data = await run_in_threadpool(
+            neo4j_db.list_columns_for_schema, db_name, s_name
+        )
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return _count_payload(data)

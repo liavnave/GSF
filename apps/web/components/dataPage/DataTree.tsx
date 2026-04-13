@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type {
   Column,
@@ -245,7 +245,7 @@ function TableBlock({
   const containsFocus =
     selectedId != null && tableSubtreeContainsFocus(table, selectedId);
   const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
-  const [fetchedOnce, setFetchedOnce] = useState(false);
+  const fetchedOnce = useRef(false);
 
   // Use real count from DB — columns[] is populated lazily.
   const hasChildren = table.num_of_columns > 0;
@@ -253,17 +253,17 @@ function TableBlock({
   useEffect(() => {
     if (
       open &&
-      !fetchedOnce &&
+      !fetchedOnce.current &&
       table.columns.length === 0 &&
       table.num_of_columns > 0
     ) {
-      setFetchedOnce(true);
+      fetchedOnce.current = true;
       onLoadColumns(table.id);
     }
-  }, [open, fetchedOnce, table.columns.length, table.num_of_columns, table.id, onLoadColumns]);
+  }, [open, table.columns.length, table.num_of_columns, table.id, onLoadColumns]);
 
   const loading =
-    open && fetchedOnce && table.columns.length === 0 && table.num_of_columns > 0;
+    open && table.columns.length === 0 && table.num_of_columns > 0;
 
   return (
     <div>
@@ -443,7 +443,7 @@ export function DataTree({
 
   const summary = useMemo(
     () =>
-      `${databases.length} db · ${databases.map((d) => d.connector_type).join(", ")}`,
+      `${databases.length} db · ${databases.map((d) => d.name).join(", ")}`,
     [databases],
   );
 
