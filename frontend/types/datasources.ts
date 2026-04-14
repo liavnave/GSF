@@ -34,7 +34,18 @@ export type Schema = {
 export type Database = {
 	id: string;
 	name: string;
+	/** Populated on expand; 0 means no schemas. */
+	num_of_schemas: number;
 	schemas: Schema[];
 };
 
 export type DataFilters = Record<string, string | string[] | undefined>;
+
+/** Response body inside `data` from GET .../catalog-branch. */
+export type CatalogBranchPayload = {
+	/** All databases (light rows); keeps multi-db tree in sync in one response. */
+	dbs: Database[];
+	schemas: Schema[];
+	tables?: Table[];
+	columns?: Column[];
+};

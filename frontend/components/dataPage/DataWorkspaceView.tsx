@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { DataTree } from './DataTree';
 import { SinglePageView, type SinglePageFormat } from './SinglePageView';
-import type { Column, Database, Table } from '@/types/datasources';
+import type { Database } from '@/types/datasources';
+import { isCatalogBranchLoadedForFocus } from '@/lib/data/catalog-branch-loaded';
 import { WORKSPACE_ROOT_PARENT_ID, buildTreeFocusPageFormat } from '@/lib/data/tree-focus-page';
+import { applyCatalogBranchPayload } from '@/lib/data/datasource-tree-merge';
 import { datasources } from '@/api/datasources';
 
 export type DataWorkspaceViewProps = {
@@ -14,71 +16,84 @@ export type DataWorkspaceViewProps = {
 	loadError: string | null;
 };
 
-/** Merge newly-loaded columns into a databases snapshot (immutable update). */
-function mergeColumns(dbs: Database[], tableId: string, columns: Column[]): Database[] {
-	return dbs.map((db) => ({
-		...db,
-		schemas: db.schemas.map((s) => ({
-			...s,
-			tables: s.tables.map((t) =>
-				t.id === tableId ? { ...t, columns, num_of_columns: columns.length } : t,
-			),
-		})),
-	}));
-}
-
-/** Client shell for /data page: focus param, lazy DataTree, and SinglePageView. */
 export function DataWorkspaceView({ databases: propDatabases, loadError }: DataWorkspaceViewProps) {
 	const searchParams = useSearchParams();
-	const treeFocusId = searchParams.get('focus');
+	const rawFocus = searchParams.get('focus');
+	const treeFocusId =
+		rawFocus != null && rawFocus.trim() !== '' ? rawFocus.trim() : null;
 
 	const workspaceDb = propDatabases[0];
 	const workspaceDataId = workspaceDb?.id ?? '';
 	const workspaceTitle = workspaceDb?.name ?? 'Data';
 
-	/**
-	 * databasesRef tracks the latest tree state (DataTree updates it via
-	 * onTableColumnsLoaded). buildTreeFocusPageFormat reads from this ref inside
-	 * getSinglePage so it always sees freshly-loaded columns.
-	 */
 	const databasesRef = useRef<Database[]>(propDatabases);
+	const [treeDataEpoch, setTreeDataEpoch] = useState(0);
+	const treeEpochFlushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const handleColumnsLoaded = useCallback((tableId: string, columns: Column[]) => {
-		databasesRef.current = mergeColumns(databasesRef.current, tableId, columns);
+	useEffect(() => {
+		const nextRootIds = new Set(propDatabases.map((d) => d.id));
+		const prevRootIds = new Set(databasesRef.current.map((d) => d.id));
+		const sameWorkspace =
+			nextRootIds.size === prevRootIds.size &&
+			[...nextRootIds].every((id) => prevRootIds.has(id));
+		if (!sameWorkspace) {
+			databasesRef.current = propDatabases;
+		}
+	}, [propDatabases]);
+
+	useEffect(
+		() => () => {
+			if (treeEpochFlushRef.current != null) {
+				clearTimeout(treeEpochFlushRef.current);
+				treeEpochFlushRef.current = null;
+			}
+		},
+		[],
+	);
+
+	const handleTreeDataUpdated = useCallback((dbs: Database[]) => {
+		databasesRef.current = dbs;
+		if (treeEpochFlushRef.current != null) return;
+		treeEpochFlushRef.current = setTimeout(() => {
+			treeEpochFlushRef.current = null;
+			setTreeDataEpoch((n) => n + 1);
+		}, 0);
 	}, []);
 
-	/**
-	 * Ensure columns for the focused table are in databasesRef before we call
-	 * buildTreeFocusPageFormat.  This avoids the race condition where the 350 ms
-	 * getSinglePage delay expires before DataTree's lazy fetch finishes.
-	 */
-	const ensureColumnsLoaded = useCallback(async (focusId: string) => {
+	const hydrateBranchForFocus = useCallback(async (focusId: string | null) => {
+		if (!focusId) return;
 		const parts = focusId.split('|');
-		// table focus = 3 parts; column focus = 4 parts (parent table = first 3)
-		if (parts.length < 3) return;
-		const tableId = parts.slice(0, 3).join('|');
+		const dbId = parts[0];
+		if (!dbId) return;
 
-		const db = databasesRef.current.find((d) => d.id === parts[0]);
-		const schema = db?.schemas.find((s) => s.id === `${parts[0]}|${parts[1]}`);
-		const table = schema?.tables.find((t) => t.id === tableId);
+		const dbs = databasesRef.current;
+		if (!dbs.some((d) => d.id === dbId)) return;
+		if (isCatalogBranchLoadedForFocus(dbs, focusId)) return;
 
-		if (!table || table.columns.length > 0 || table.num_of_columns === 0) return;
-
-		const res = await datasources.getTableById(tableId);
+		const schemaName = parts[1];
+		const tableName = parts[2];
+		const res = await datasources.getCatalogBranch(
+			dbId,
+			{
+				...(schemaName !== undefined && schemaName !== '' ? { schemaName } : {}),
+				...(tableName !== undefined && tableName !== '' ? { tableName } : {}),
+			},
+			{},
+		);
 		if (res.error === true || !res.data) return;
-		const columns = (res.data as Table).columns ?? [];
-		databasesRef.current = mergeColumns(databasesRef.current, tableId, columns);
+		databasesRef.current = applyCatalogBranchPayload(
+			databasesRef.current,
+			dbId,
+			res.data,
+			{ schemaName, tableName },
+		);
 	}, []);
 
 	const getSinglePage = useCallback(
 		async (dataId: string, treeFocus: string | null): Promise<SinglePageFormat> => {
-			// Load columns for the focused table/column before building the format.
-			// Runs in parallel with the 350 ms UX delay.
-			const [,] = await Promise.all([
-				treeFocus ? ensureColumnsLoaded(treeFocus) : Promise.resolve(),
-				new Promise<void>((r) => setTimeout(r, 350)),
-			]);
+			if (treeFocus) await hydrateBranchForFocus(treeFocus);
 			const base = buildTreeFocusPageFormat(treeFocus, databasesRef.current, dataId);
+			const treeSelectedId = treeFocus ?? undefined;
 			return {
 				...base,
 				leftPanel: {
@@ -86,17 +101,17 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 					bulks: [],
 					slot: (
 						<DataTree
-							key="workspace-tree"
+							key="data-catalog-tree"
 							initialDatabases={databasesRef.current}
-							selectedId={treeFocus ?? undefined}
-							hrefPrefix="/data"
-							onTableColumnsLoaded={handleColumnsLoaded}
+							selectedId={treeSelectedId}
+							pathBase="/data"
+							onTreeDataUpdated={handleTreeDataUpdated}
 						/>
 					),
 				},
 			};
 		},
-		[handleColumnsLoaded, ensureColumnsLoaded],
+		[handleTreeDataUpdated, hydrateBranchForFocus],
 	);
 
 	if (loadError) {
@@ -115,11 +130,7 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 					<p className="mt-2 text-sm text-red-700/90 dark:text-red-400/90">
 						Check that the API is running{' '}
 						<code className="rounded bg-red-100/80 px-1.5 py-0.5 font-mono text-xs dark:bg-red-950/80">
-							npm run dev:api
-						</code>{' '}
-						or{' '}
-						<code className="rounded bg-red-100/80 px-1.5 py-0.5 font-mono text-xs dark:bg-red-950/80">
-							npm run dev:stack
+							pnpm dev:api
 						</code>
 						.
 					</p>
@@ -171,7 +182,9 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 					</div>
 					<div className="flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white/80 px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300">
 						<span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-						{workspaceDb.name}
+						{treeFocusId == null
+							? `${propDatabases.length} ${propDatabases.length === 1 ? 'database' : 'databases'}`
+							: workspaceDb.name}
 					</div>
 				</div>
 			</header>
@@ -180,6 +193,7 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 				parentId={WORKSPACE_ROOT_PARENT_ID}
 				title={workspaceTitle}
 				treeFocusId={treeFocusId}
+				treeDataEpoch={treeDataEpoch}
 				getSinglePage={getSinglePage}
 			/>
 		</div>

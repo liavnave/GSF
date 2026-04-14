@@ -1,11 +1,13 @@
 import type { SinglePageFormat } from '@/components/dataPage/SinglePageView';
 import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { ComposerSection } from '@/types/composer-section';
+import { isCatalogBranchLoadedForFocus } from '@/lib/data/catalog-branch-loaded';
 
 export const WORKSPACE_ROOT_PARENT_ID = 'workspace-root';
 
 export type TreeResolved =
 	| { kind: 'none' }
+	| { kind: 'loading' }
 	| { kind: 'db'; db: Database }
 	| { kind: 'schema'; db: Database; schema: Schema }
 	| { kind: 'table'; db: Database; schema: Schema; table: Table }
@@ -53,6 +55,15 @@ function inSchemas(db: Database, focusId: string): TreeResolved | null {
 	return null;
 }
 
+function treePendingColumnFocus(focusId: string, databases: Database[]): TreeResolved {
+	const parts = focusId.split('|');
+	if (parts.length !== 4) return { kind: 'none' };
+	const dbId = parts[0];
+	if (!dbId || !databases.some((d) => d.id === dbId)) return { kind: 'none' };
+	if (isCatalogBranchLoadedForFocus(databases, focusId)) return { kind: 'none' };
+	return { kind: 'loading' };
+}
+
 export function resolveTreeNode(focusId: string | null, databases: Database[]): TreeResolved {
 	if (!focusId) return { kind: 'none' };
 	for (const db of databases) {
@@ -60,7 +71,7 @@ export function resolveTreeNode(focusId: string | null, databases: Database[]): 
 		const s = inSchemas(db, focusId);
 		if (s) return s;
 	}
-	return { kind: 'none' };
+	return treePendingColumnFocus(focusId, databases);
 }
 
 function baseCardsForEntity(
@@ -90,15 +101,58 @@ export function buildTreeFocusPageFormat(
 ): SinglePageFormat {
 	const r = resolveTreeNode(focusId, databases);
 
-	if (r.kind === 'none') {
+	if (r.kind === 'loading') {
+		const sections: ComposerSection[] = [
+			{
+				kind: 'loadingPanel',
+				id: 'tree-focus-loading',
+				message: 'Loading catalog details…',
+			},
+		];
 		return {
-			sections: [],
+			sections,
+			header: {
+				header: {
+					title: 'Loading…',
+					subtitle: 'Catalog',
+				},
+			},
+		};
+	}
+
+	if (r.kind === 'none') {
+		const sections: ComposerSection[] = [
+			{
+				kind: 'textCard',
+				id: 'catalog-intro',
+				title: 'Catalog',
+				body:
+					databases.length === 0
+						? 'No databases are available yet.'
+						: 'Choose a database in the tree or pick one from the table below.',
+			},
+		];
+		if (databases.length > 0) {
+			sections.push({
+				kind: 'dataTable',
+				id: 'all-databases',
+				title: `Databases (${databases.length})`,
+				columns: [
+					{ key: 'name', label: 'Name' },
+					{ key: 'schemas', label: 'Schemas' },
+				],
+				rows: databases.map((d) => ({
+					name: d.name,
+					schemas: String(d.num_of_schemas),
+				})),
+			});
+		}
+		return {
+			sections,
 			header: {
 				header: {
 					title: 'All Data',
 					subtitle: 'Select a database, schema, table, or column in the tree.',
-					entityId: workspaceDataId,
-					parentId: WORKSPACE_ROOT_PARENT_ID,
 				},
 			},
 		};
@@ -215,9 +269,10 @@ export function buildTreeFocusPageFormat(
 			sections.push(
 				...baseCardsForEntity(`Column ${c.name} in ${c.table_name}.`, [
 					{ label: 'Column', value: c.name },
-					{ label: 'Data type', value: c.data_type },
+					{ label: 'Data type', value: c.data_type.trim() ? c.data_type : '—' },
 					{ label: 'Table', value: c.table_name },
 					{ label: 'Schema', value: c.schema_name },
+					{ label: 'Database', value: c.database_name },
 					{ label: 'Position', value: String(c.ordinal_position) },
 				]),
 			);
@@ -226,7 +281,7 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: c.name,
-						subtitle: `Column · ${c.table_name}`,
+						subtitle: `Column · ${c.schema_name} · ${c.table_name} · ${c.database_name}`,
 						entityId: c.id,
 						parentId: r.table.id,
 					},

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import { SinglePageComposer, type SinglePageComposerProps } from '@/common/SinglePageComposer';
 
@@ -11,6 +11,8 @@ export type SinglePageViewProps = {
 	title: string;
 	getSinglePage: (dataId: string, treeFocusId: string | null) => Promise<SinglePageFormat>;
 	treeFocusId?: string | null;
+	/** Increment when explorer tree merges API data so details re-render without changing focus. */
+	treeDataEpoch?: number;
 	parentId?: string;
 };
 
@@ -20,13 +22,30 @@ export const SinglePageView = ({
 	title,
 	getSinglePage,
 	treeFocusId = null,
+	treeDataEpoch = 0,
 }: SinglePageViewProps): React.JSX.Element | null => {
 	const [loading, setLoading] = useState(true);
 	const [props, setProps] = useState<SinglePageFormat | null>(null);
+	const prevCoreRef = useRef<{
+		dataId: string;
+		treeFocusId: string | null;
+		getSinglePage: (a: string, b: string | null) => Promise<SinglePageFormat>;
+	} | null>(null);
+
 	useEffect(() => {
 		let cancelled = false;
+		const prev = prevCoreRef.current;
+		const coreChanged =
+			prev == null ||
+			prev.dataId !== dataId ||
+			prev.treeFocusId !== treeFocusId ||
+			prev.getSinglePage !== getSinglePage;
+		prevCoreRef.current = { dataId, treeFocusId, getSinglePage };
+
 		(async () => {
-			setLoading(true);
+			if (coreChanged) {
+				setLoading(true);
+			}
 			try {
 				const response = await getSinglePage(dataId, treeFocusId);
 				if (!cancelled) {
@@ -41,7 +60,7 @@ export const SinglePageView = ({
 		return () => {
 			cancelled = true;
 		};
-	}, [dataId, getSinglePage, treeFocusId]);
+	}, [dataId, getSinglePage, treeFocusId, treeDataEpoch]);
 
 	if (loading) {
 		return (
@@ -61,13 +80,14 @@ export const SinglePageView = ({
 		return null;
 	}
 
+	const hasTreeFocus = treeFocusId != null && treeFocusId !== '';
+
 	return (
 		<div className="mt-1 flex h-full min-h-0 w-full flex-1 flex-col justify-start overflow-hidden !p-[20px] sm:mt-2">
 			<SinglePageComposer
 				header={{
 					header: {
-						entityId: dataId,
-						parentId,
+						...(hasTreeFocus ? { entityId: dataId, parentId } : {}),
 						title,
 						withBorder: true,
 						...props.header?.header,

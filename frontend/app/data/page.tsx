@@ -1,11 +1,6 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { DataWorkspaceView } from '@/components/dataPage';
 import { datasources } from '@/api/datasources';
-
-export const metadata: Metadata = {
-	title: 'Data',
-};
 
 export default async function DataPage() {
 	const res = await datasources.getDBs({});

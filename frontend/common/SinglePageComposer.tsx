@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, type ReactNode } from 'react';
+import { Spinner } from '@nvidia/foundations-react-core';
 import type { Breadcrumb } from '@/types/breadcrumbs';
 import { isComposerSection, type ComposerSection } from '@/types/composer-section';
 
@@ -25,6 +26,15 @@ type EditHeaderProps = {
 	onFinishEdit?: (approve: boolean) => void;
 	isLoadingUpdate?: boolean;
 };
+
+function composerSectionHeading(section: ComposerSection): string {
+	switch (section.kind) {
+		case 'loadingPanel':
+			return section.message;
+		default:
+			return section.title;
+	}
+}
 
 function renderComposerSection(section: ComposerSection): ReactNode {
 	switch (section.kind) {
@@ -103,6 +113,18 @@ function renderComposerSection(section: ComposerSection): ReactNode {
 					</div>
 				</div>
 			);
+		case 'loadingPanel':
+			return (
+				<div
+					className="flex min-h-[min(50dvh,420px)] flex-col items-center justify-center gap-4 rounded-lg border border-zinc-200/80 bg-white/70 px-8 py-12 dark:border-zinc-700/80 dark:bg-zinc-950/40"
+					role="status"
+				>
+					<Spinner aria-label="Loading" />
+					<p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+						{section.message}
+					</p>
+				</div>
+			);
 		default:
 			return null;
 	}
@@ -171,7 +193,9 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 					<ol className="list-decimal space-y-4 pl-5 text-sm">
 						{sections.map((s, i) => (
 							<li key={i} className="text-zinc-700 dark:text-zinc-300">
-								<span className="font-medium">{(s as ComposerSection).title}</span>
+								<span className="font-medium">
+									{isComposerSection(s) ? composerSectionHeading(s) : 'Section'}
+								</span>
 							</li>
 						))}
 					</ol>
@@ -328,7 +352,12 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 											className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]"
 										>
 											<h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-												{(section as ComposerSection).title}
+												{typeof section === 'object' &&
+												section !== null &&
+												'title' in section &&
+												typeof (section as { title: unknown }).title === 'string'
+													? (section as { title: string }).title
+													: 'Section'}
 											</h2>
 											<pre className="mt-2 max-h-40 overflow-auto rounded bg-zinc-100 p-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
 												{JSON.stringify(section, null, 2)}

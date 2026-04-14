@@ -43,6 +43,6 @@ export const requests = {
 				signal: abortController?.signal,
 			})
 			.then(responseBody)
-			.catch(errorHandler) as unknown as ResponseWithError<OutputType>;
+			.catch(errorHandler) as Promise<ResponseWithError<OutputType>>;
 	},
 };

@@ -20,10 +20,18 @@ export type ComposerDataTableSection = {
 	rows: Record<string, string>[];
 };
 
+export type ComposerLoadingPanelSection = {
+	kind: 'loadingPanel';
+	id: string;
+	/** Shown under the spinner. */
+	message: string;
+};
+
 export type ComposerSection =
 	| ComposerTextCardSection
 	| ComposerInfoGridSection
-	| ComposerDataTableSection;
+	| ComposerDataTableSection
+	| ComposerLoadingPanelSection;
 
 export function isComposerSection(x: unknown): x is ComposerSection {
 	return (
