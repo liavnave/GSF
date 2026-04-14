@@ -89,6 +89,7 @@ function Row({
 	href,
 	onClick,
 	onActivateBranch,
+	onChevronFocusSync,
 }: {
 	depth: number;
 	open: boolean;
@@ -100,7 +101,10 @@ function Row({
 	selected: boolean;
 	href?: string;
 	onClick?: () => void;
+	/** Branch rows: expand + set catalog `focus` (URL). */
 	onActivateBranch?: () => void;
+	/** After chevron toggles expand/collapse, sync `focus` to this node (same as row select). */
+	onChevronFocusSync?: () => void;
 }) {
 	const pad = 12 + depth * 12;
 	const style = { paddingLeft: pad, paddingRight: 12 };
@@ -116,13 +120,17 @@ function Row({
 			className="inline-flex w-4 shrink-0 cursor-pointer items-center justify-center rounded text-[10px] text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80"
 			onClick={(e) => {
 				e.stopPropagation();
-				if (hasChildren) onToggle();
+				if (!hasChildren) return;
+				onToggle();
+				onChevronFocusSync?.();
 			}}
 			onKeyDown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
 					e.preventDefault();
 					e.stopPropagation();
-					if (hasChildren) onToggle();
+					if (!hasChildren) return;
+					onToggle();
+					onChevronFocusSync?.();
 				}
 			}}
 		>
@@ -212,10 +220,13 @@ function TableBlock({
 	const containsFocus = selectedId != null && tableSubtreeContainsFocus(table, selectedId);
 	const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
 	const fetchedOnce = useRef(false);
+	const syncTableFocus = useCallback(() => {
+		router.replace(catalogPathFromFocusId(table.id, pathBase), { scroll: false });
+	}, [router, pathBase, table.id]);
 	const activateTable = useCallback(() => {
 		setOpen(true);
-		router.replace(catalogPathFromFocusId(table.id, pathBase), { scroll: false });
-	}, [router, pathBase, table.id, setOpen]);
+		syncTableFocus();
+	}, [setOpen, syncTableFocus]);
 
 	const hasChildren = table.num_of_columns > 0;
 
@@ -246,6 +257,7 @@ function TableBlock({
 				selected={selectedId === table.id}
 				href={hasChildren ? undefined : catalogPathFromFocusId(table.id, pathBase)}
 				onActivateBranch={hasChildren ? activateTable : undefined}
+				onChevronFocusSync={hasChildren ? syncTableFocus : undefined}
 			/>
 			{open && table.columns.length > 0
 				? table.columns.map((col) => (
@@ -281,11 +293,14 @@ function SchemaBlock({
 	const containsFocus = selectedId != null && schemaSubtreeContainsFocus(schema, selectedId);
 	const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
 	const hasChildren = (schema.num_of_tables ?? 0) > 0;
-	const activateSchema = useCallback(() => {
-		setOpen(true);
-		router.replace(catalogPathFromFocusId(schema.id, pathBase), { scroll: false });
-	}, [router, pathBase, schema.id, setOpen]);
 	const [loadingTables, setLoadingTables] = useState(false);
+	const syncSchemaFocus = useCallback(() => {
+		router.replace(catalogPathFromFocusId(schema.id, pathBase), { scroll: false });
+	}, [router, pathBase, schema.id]);
+	const activateSchemaBranch = useCallback(() => {
+		setOpen(true);
+		syncSchemaFocus();
+	}, [setOpen, syncSchemaFocus]);
 
 	useEffect(() => {
 		if (!open || schema.tables.length > 0 || (schema.num_of_tables ?? 0) === 0) return;
@@ -317,7 +332,8 @@ function SchemaBlock({
 				meta="schema"
 				selected={selectedId === schema.id}
 				href={hasChildren ? undefined : catalogPathFromFocusId(schema.id, pathBase)}
-				onActivateBranch={hasChildren ? activateSchema : undefined}
+				onActivateBranch={hasChildren ? activateSchemaBranch : undefined}
+				onChevronFocusSync={hasChildren ? syncSchemaFocus : undefined}
 			/>
 			{open && hasChildren
 				? schema.tables.map((t) => (
@@ -354,12 +370,14 @@ function DatabaseBlock({
 	const containsFocus = selectedId != null && databaseSubtreeContainsFocus(database, selectedId);
 	const [open, setOpen] = useOpenBranch(containsFocus, selectedId, false);
 	const hasChildren = (database.num_of_schemas ?? 0) > 0;
-
-	const activateDatabase = useCallback(() => {
-		setOpen(true);
-		router.replace(catalogPathFromFocusId(database.id, pathBase), { scroll: false });
-	}, [router, pathBase, database.id, setOpen]);
 	const [loadingSchemas, setLoadingSchemas] = useState(false);
+	const syncDatabaseFocus = useCallback(() => {
+		router.replace(catalogPathFromFocusId(database.id, pathBase), { scroll: false });
+	}, [router, pathBase, database.id]);
+	const activateDatabaseBranch = useCallback(() => {
+		setOpen(true);
+		syncDatabaseFocus();
+	}, [setOpen, syncDatabaseFocus]);
 
 	useEffect(() => {
 		if (!open || database.schemas.length > 0 || (database.num_of_schemas ?? 0) === 0) return;
@@ -391,7 +409,8 @@ function DatabaseBlock({
 				meta={DataModels.DB}
 				selected={selectedId === database.id}
 				href={hasChildren ? undefined : catalogPathFromFocusId(database.id, pathBase)}
-				onActivateBranch={hasChildren ? activateDatabase : undefined}
+				onActivateBranch={hasChildren ? activateDatabaseBranch : undefined}
+				onChevronFocusSync={hasChildren ? syncDatabaseFocus : undefined}
 			/>
 			{open && hasChildren
 				? database.schemas.map((s) => (
