@@ -355,7 +355,8 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 												{typeof section === 'object' &&
 												section !== null &&
 												'title' in section &&
-												typeof (section as { title: unknown }).title === 'string'
+												typeof (section as { title: unknown }).title ===
+													'string'
 													? (section as { title: string }).title
 													: 'Section'}
 											</h2>

@@ -43,11 +43,7 @@ export function applyCatalogBranchPayload(
 		next = mergeTablesIntoSchema(next, `${dbId}|${schemaName}`, payload.tables);
 	}
 	if (payload.columns != null && schemaName && tableName) {
-		next = mergeColumnsIntoTable(
-			next,
-			`${dbId}|${schemaName}|${tableName}`,
-			payload.columns,
-		);
+		next = mergeColumnsIntoTable(next, `${dbId}|${schemaName}|${tableName}`, payload.columns);
 	}
 	return next;
 }
@@ -63,9 +59,7 @@ export function mergeColumnsIntoTable(
 		schemas: db.schemas.map((s) => ({
 			...s,
 			tables: s.tables.map((t) =>
-				t.id === tableId
-					? { ...t, columns, num_of_columns: columns.length }
-					: t,
+				t.id === tableId ? { ...t, columns, num_of_columns: columns.length } : t,
 			),
 		})),
 	}));

@@ -19,8 +19,7 @@ export type DataWorkspaceViewProps = {
 export function DataWorkspaceView({ databases: propDatabases, loadError }: DataWorkspaceViewProps) {
 	const searchParams = useSearchParams();
 	const rawFocus = searchParams.get('focus');
-	const treeFocusId =
-		rawFocus != null && rawFocus.trim() !== '' ? rawFocus.trim() : null;
+	const treeFocusId = rawFocus != null && rawFocus.trim() !== '' ? rawFocus.trim() : null;
 
 	const workspaceDb = propDatabases[0];
 	const workspaceDataId = workspaceDb?.id ?? '';
@@ -81,12 +80,10 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 			{},
 		);
 		if (res.error === true || !res.data) return;
-		databasesRef.current = applyCatalogBranchPayload(
-			databasesRef.current,
-			dbId,
-			res.data,
-			{ schemaName, tableName },
-		);
+		databasesRef.current = applyCatalogBranchPayload(databasesRef.current, dbId, res.data, {
+			schemaName,
+			tableName,
+		});
 	}, []);
 
 	const getSinglePage = useCallback(

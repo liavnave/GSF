@@ -459,11 +459,7 @@ export function DataTree({
 	const loadTableColumns = useCallback(
 		async (tableId: string) => {
 			const [dbId, schemaName, tableName] = splitTableId(tableId);
-			const res = await datasources.getCatalogBranch(
-				dbId,
-				{ schemaName, tableName },
-				{},
-			);
+			const res = await datasources.getCatalogBranch(dbId, { schemaName, tableName }, {});
 			if (res.error === true || !res.data) return;
 			setDatabases((prev) => {
 				const next = applyCatalogBranchPayload(prev, dbId, res.data, {

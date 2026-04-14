@@ -18,12 +18,7 @@ function catalogBranchRequestKey(
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(',') : String(v)}`)
 		.join('&');
-	return [
-		dbId,
-		opts.schemaName ?? '',
-		opts.tableName ?? '',
-		filterBits,
-	].join('\0');
+	return [dbId, opts.schemaName ?? '', opts.tableName ?? '', filterBits].join('\0');
 }
 
 export const datasources = {
