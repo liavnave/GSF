@@ -99,9 +99,9 @@ export function buildTreeFocusPageFormat(
 	databases: Database[],
 	workspaceDataId: string,
 ): SinglePageFormat {
-	const r = resolveTreeNode(focusId, databases);
+	const resolvedFocus = resolveTreeNode(focusId, databases);
 
-	if (r.kind === 'loading') {
+	if (resolvedFocus.kind === 'loading') {
 		const sections: ComposerSection[] = [
 			{
 				kind: 'loadingPanel',
@@ -120,7 +120,7 @@ export function buildTreeFocusPageFormat(
 		};
 	}
 
-	if (r.kind === 'none') {
+	if (resolvedFocus.kind === 'none') {
 		const sections: ComposerSection[] = [
 			{
 				kind: 'textCard',
@@ -160,23 +160,23 @@ export function buildTreeFocusPageFormat(
 
 	const sections: ComposerSection[] = [];
 
-	switch (r.kind) {
+	switch (resolvedFocus.kind) {
 		case 'db': {
 			sections.push(
 				...baseCardsForEntity(
-					`Warehouse connection ${r.db.name}. ${r.db.schemas.length} schema(s) available.`,
-					[{ label: 'Schemas', value: String(r.db.schemas.length) }],
+					`Warehouse connection ${resolvedFocus.db.name}. ${resolvedFocus.db.schemas.length} schema(s) available.`,
+					[{ label: 'Schemas', value: String(resolvedFocus.db.schemas.length) }],
 				),
 			);
 			sections.push({
 				kind: 'dataTable',
 				id: 'child-schemas',
-				title: `Schemas (${r.db.schemas.length})`,
+				title: `Schemas (${resolvedFocus.db.schemas.length})`,
 				columns: [
 					{ key: 'name', label: 'Name' },
 					{ key: 'tables', label: 'Tables' },
 				],
-				rows: r.db.schemas.map((s) => ({
+				rows: resolvedFocus.db.schemas.map((s) => ({
 					name: s.name,
 					tables: String(s.num_of_tables),
 				})),
@@ -185,16 +185,16 @@ export function buildTreeFocusPageFormat(
 				sections,
 				header: {
 					header: {
-						title: r.db.name,
+						title: resolvedFocus.db.name,
 						subtitle: 'database',
-						entityId: r.db.id,
+						entityId: resolvedFocus.db.id,
 						parentId: workspaceDataId,
 					},
 				},
 			};
 		}
 		case 'schema': {
-			const s = r.schema;
+			const s = resolvedFocus.schema;
 			sections.push(
 				...baseCardsForEntity(`Schema ${s.name} in ${s.database_name}.`, [
 					{ label: 'Schema', value: s.name },
@@ -220,15 +220,15 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: s.name,
-						subtitle: `Schema · ${r.db.name}`,
+						subtitle: `Schema · ${resolvedFocus.db.name}`,
 						entityId: s.id,
-						parentId: r.db.id,
+						parentId: resolvedFocus.db.id,
 					},
 				},
 			};
 		}
 		case 'table': {
-			const t = r.table;
+			const t = resolvedFocus.table;
 			sections.push(
 				...baseCardsForEntity(t.description, [
 					{ label: 'Table', value: t.name },
@@ -257,15 +257,15 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: t.name,
-						subtitle: `Table · ${r.schema.name} · ${r.db.name}`,
+						subtitle: `Table · ${resolvedFocus.schema.name} · ${resolvedFocus.db.name}`,
 						entityId: t.id,
-						parentId: r.schema.id,
+						parentId: resolvedFocus.schema.id,
 					},
 				},
 			};
 		}
 		case 'column': {
-			const c = r.column;
+			const c = resolvedFocus.column;
 			sections.push(
 				...baseCardsForEntity(`Column ${c.name} in ${c.table_name}.`, [
 					{ label: 'Column', value: c.name },
@@ -283,7 +283,7 @@ export function buildTreeFocusPageFormat(
 						title: c.name,
 						subtitle: `Column · ${c.schema_name} · ${c.table_name} · ${c.database_name}`,
 						entityId: c.id,
-						parentId: r.table.id,
+						parentId: resolvedFocus.table.id,
 					},
 				},
 			};

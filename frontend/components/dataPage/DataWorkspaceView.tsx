@@ -124,13 +124,6 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 					<h2 className="text-lg font-semibold tracking-tight text-red-800 dark:text-red-300">
 						Couldn&apos;t load databases
 					</h2>
-					<p className="mt-2 text-sm text-red-700/90 dark:text-red-400/90">
-						Check that the API is running{' '}
-						<code className="rounded bg-red-100/80 px-1.5 py-0.5 font-mono text-xs dark:bg-red-950/80">
-							pnpm dev:api
-						</code>
-						.
-					</p>
 					<pre className="mt-4 max-w-full overflow-x-auto rounded-lg border border-red-100 bg-red-50/80 p-3 text-left text-xs text-red-900/80 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
 						{loadError}
 					</pre>
