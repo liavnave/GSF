@@ -101,7 +101,7 @@ function Row({
 	selected: boolean;
 	href?: string;
 	onClick?: () => void;
-	/** Branch rows: expand + set catalog `focus` (URL). */
+	/** Branch rows: focus in URL + expand; repeat click on selected row collapses children only. */
 	onActivateBranch?: () => void;
 	/** After chevron toggles expand/collapse, sync `focus` to this node (same as row select). */
 	onChevronFocusSync?: () => void;
@@ -224,9 +224,13 @@ function TableBlock({
 		router.replace(catalogPathFromFocusId(table.id, pathBase), { scroll: false });
 	}, [router, pathBase, table.id]);
 	const activateTable = useCallback(() => {
+		if (selectedId === table.id) {
+			setOpen((o) => !o);
+			return;
+		}
 		setOpen(true);
 		syncTableFocus();
-	}, [setOpen, syncTableFocus]);
+	}, [selectedId, table.id, setOpen, syncTableFocus]);
 
 	const hasChildren = table.num_of_columns > 0;
 
@@ -298,9 +302,13 @@ function SchemaBlock({
 		router.replace(catalogPathFromFocusId(schema.id, pathBase), { scroll: false });
 	}, [router, pathBase, schema.id]);
 	const activateSchemaBranch = useCallback(() => {
+		if (selectedId === schema.id) {
+			setOpen((o) => !o);
+			return;
+		}
 		setOpen(true);
 		syncSchemaFocus();
-	}, [setOpen, syncSchemaFocus]);
+	}, [selectedId, schema.id, setOpen, syncSchemaFocus]);
 
 	useEffect(() => {
 		if (!open || schema.tables.length > 0 || (schema.num_of_tables ?? 0) === 0) return;
@@ -375,9 +383,13 @@ function DatabaseBlock({
 		router.replace(catalogPathFromFocusId(database.id, pathBase), { scroll: false });
 	}, [router, pathBase, database.id]);
 	const activateDatabaseBranch = useCallback(() => {
+		if (selectedId === database.id) {
+			setOpen((o) => !o);
+			return;
+		}
 		setOpen(true);
 		syncDatabaseFocus();
-	}, [setOpen, syncDatabaseFocus]);
+	}, [selectedId, database.id, setOpen, syncDatabaseFocus]);
 
 	useEffect(() => {
 		if (!open || database.schemas.length > 0 || (database.num_of_schemas ?? 0) === 0) return;
