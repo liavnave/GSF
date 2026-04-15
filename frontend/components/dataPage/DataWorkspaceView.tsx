@@ -71,14 +71,10 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 
 		const schemaName = parts[1];
 		const tableName = parts[2];
-		const res = await datasources.getCatalogBranch(
-			dbId,
-			{
-				...(schemaName !== undefined && schemaName !== '' ? { schemaName } : {}),
-				...(tableName !== undefined && tableName !== '' ? { tableName } : {}),
-			},
-			{},
-		);
+		const res = await datasources.getCatalogBranch(dbId, {
+			...(schemaName !== undefined && schemaName !== '' ? { schemaName } : {}),
+			...(tableName !== undefined && tableName !== '' ? { tableName } : {}),
+		});
 		if (res.error === true || !res.data) return;
 		databasesRef.current = applyCatalogBranchPayload(databasesRef.current, dbId, res.data, {
 			schemaName,

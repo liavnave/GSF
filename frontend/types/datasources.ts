@@ -39,8 +39,6 @@ export type Database = {
 	schemas: Schema[];
 };
 
-export type DataFilters = Record<string, string | string[] | undefined>;
-
 /** Response body inside `data` from GET .../catalog-branch. */
 export type CatalogBranchPayload = {
 	/** All databases (light rows); keeps multi-db tree in sync in one response. */
