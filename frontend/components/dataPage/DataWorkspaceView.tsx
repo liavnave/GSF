@@ -138,9 +138,6 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 				<p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
 					No databases returned
 				</p>
-				<p className="max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-					The API responded with an empty list. Add a datasource or check your mock data.
-				</p>
 			</div>
 		);
 	}

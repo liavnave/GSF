@@ -1,19 +1,21 @@
+import { ComposerSectionKind } from '@/enums/datasources';
+
 export type ComposerTextCardSection = {
-	kind: 'textCard';
+	type: ComposerSectionKind.TEXT_CARD;
 	id: string;
 	title: string;
 	body: string;
 };
 
 export type ComposerInfoGridSection = {
-	kind: 'infoGrid';
+	type: ComposerSectionKind.INFO_GRID;
 	id: string;
 	title: string;
 	items: { label: string; value: string }[];
 };
 
 export type ComposerDataTableSection = {
-	kind: 'dataTable';
+	type: ComposerSectionKind.DATA_TABLE;
 	id: string;
 	title: string;
 	columns: { key: string; label: string }[];
@@ -21,7 +23,7 @@ export type ComposerDataTableSection = {
 };
 
 export type ComposerLoadingPanelSection = {
-	kind: 'loadingPanel';
+	type: ComposerSectionKind.LOADING_PANEL;
 	id: string;
 	/** Shown under the spinner. */
 	message: string;
@@ -33,11 +35,18 @@ export type ComposerSection =
 	| ComposerDataTableSection
 	| ComposerLoadingPanelSection;
 
+const composerSectionTypes: readonly ComposerSectionKind[] = [
+	ComposerSectionKind.TEXT_CARD,
+	ComposerSectionKind.INFO_GRID,
+	ComposerSectionKind.DATA_TABLE,
+	ComposerSectionKind.LOADING_PANEL,
+];
+
 export function isComposerSection(x: unknown): x is ComposerSection {
 	return (
 		x !== null &&
 		typeof x === 'object' &&
-		'kind' in x &&
-		typeof (x as ComposerSection).kind === 'string'
+		'type' in x &&
+		composerSectionTypes.includes((x as ComposerSection).type as ComposerSectionKind)
 	);
 }

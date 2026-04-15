@@ -1,4 +1,5 @@
 import type { SinglePageFormat } from '@/components/dataPage/SinglePageView';
+import { ComposerSectionKind, DataModels, TreeFocusState } from '@/enums/datasources';
 import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { ComposerSection } from '@/types/composer-section';
 import { isCatalogBranchLoadedForFocus } from '@/lib/data/catalog-branch-loaded';
@@ -6,13 +7,13 @@ import { isCatalogBranchLoadedForFocus } from '@/lib/data/catalog-branch-loaded'
 export const WORKSPACE_ROOT_PARENT_ID = 'workspace-root';
 
 export type TreeResolved =
-	| { kind: 'none' }
-	| { kind: 'loading' }
-	| { kind: 'db'; db: Database }
-	| { kind: 'schema'; db: Database; schema: Schema }
-	| { kind: 'table'; db: Database; schema: Schema; table: Table }
+	| { type: TreeFocusState.NONE }
+	| { type: TreeFocusState.LOADING }
+	| { type: DataModels.DB; db: Database }
+	| { type: DataModels.SCHEMA; db: Database; schema: Schema }
+	| { type: DataModels.TABLE; db: Database; schema: Schema; table: Table }
 	| {
-			kind: 'column';
+			type: DataModels.COLUMN;
 			db: Database;
 			schema: Schema;
 			table: Table;
@@ -27,7 +28,7 @@ function inColumns(
 ): TreeResolved | null {
 	for (const column of table.columns) {
 		if (column.id === focusId) {
-			return { kind: 'column', db, schema, table, column };
+			return { type: DataModels.COLUMN, db, schema, table, column };
 		}
 	}
 	return null;
@@ -36,7 +37,7 @@ function inColumns(
 function inTables(db: Database, schema: Schema, focusId: string): TreeResolved | null {
 	for (const table of schema.tables) {
 		if (table.id === focusId) {
-			return { kind: 'table', db, schema, table };
+			return { type: DataModels.TABLE, db, schema, table };
 		}
 		const c = inColumns(db, schema, table, focusId);
 		if (c) return c;
@@ -47,7 +48,7 @@ function inTables(db: Database, schema: Schema, focusId: string): TreeResolved |
 function inSchemas(db: Database, focusId: string): TreeResolved | null {
 	for (const schema of db.schemas) {
 		if (schema.id === focusId) {
-			return { kind: 'schema', db, schema };
+			return { type: DataModels.SCHEMA, db, schema };
 		}
 		const t = inTables(db, schema, focusId);
 		if (t) return t;
@@ -57,17 +58,17 @@ function inSchemas(db: Database, focusId: string): TreeResolved | null {
 
 function treePendingColumnFocus(focusId: string, databases: Database[]): TreeResolved {
 	const parts = focusId.split('|');
-	if (parts.length !== 4) return { kind: 'none' };
+	if (parts.length !== 4) return { type: TreeFocusState.NONE };
 	const dbId = parts[0];
-	if (!dbId || !databases.some((d) => d.id === dbId)) return { kind: 'none' };
-	if (isCatalogBranchLoadedForFocus(databases, focusId)) return { kind: 'none' };
-	return { kind: 'loading' };
+	if (!dbId || !databases.some((d) => d.id === dbId)) return { type: TreeFocusState.NONE };
+	if (isCatalogBranchLoadedForFocus(databases, focusId)) return { type: TreeFocusState.NONE };
+	return { type: TreeFocusState.LOADING };
 }
 
 export function resolveTreeNode(focusId: string | null, databases: Database[]): TreeResolved {
-	if (!focusId) return { kind: 'none' };
+	if (!focusId) return { type: TreeFocusState.NONE };
 	for (const db of databases) {
-		if (db.id === focusId) return { kind: 'db', db };
+		if (db.id === focusId) return { type: DataModels.DB, db };
 		const s = inSchemas(db, focusId);
 		if (s) return s;
 	}
@@ -80,13 +81,13 @@ function baseCardsForEntity(
 ): ComposerSection[] {
 	return [
 		{
-			kind: 'textCard',
+			type: ComposerSectionKind.TEXT_CARD,
 			id: 'description',
 			title: 'Description',
 			body: description,
 		},
 		{
-			kind: 'infoGrid',
+			type: ComposerSectionKind.INFO_GRID,
 			id: 'information',
 			title: 'Information',
 			items,
@@ -101,10 +102,10 @@ export function buildTreeFocusPageFormat(
 ): SinglePageFormat {
 	const resolvedFocus = resolveTreeNode(focusId, databases);
 
-	if (resolvedFocus.kind === 'loading') {
+	if (resolvedFocus.type === TreeFocusState.LOADING) {
 		const sections: ComposerSection[] = [
 			{
-				kind: 'loadingPanel',
+				type: ComposerSectionKind.LOADING_PANEL,
 				id: 'tree-focus-loading',
 				message: 'Loading catalog details…',
 			},
@@ -120,10 +121,10 @@ export function buildTreeFocusPageFormat(
 		};
 	}
 
-	if (resolvedFocus.kind === 'none') {
+	if (resolvedFocus.type === TreeFocusState.NONE) {
 		const sections: ComposerSection[] = [
 			{
-				kind: 'textCard',
+				type: ComposerSectionKind.TEXT_CARD,
 				id: 'catalog-intro',
 				title: 'Catalog',
 				body:
@@ -134,7 +135,7 @@ export function buildTreeFocusPageFormat(
 		];
 		if (databases.length > 0) {
 			sections.push({
-				kind: 'dataTable',
+				type: ComposerSectionKind.DATA_TABLE,
 				id: 'all-databases',
 				title: `Databases (${databases.length})`,
 				columns: [
@@ -160,8 +161,8 @@ export function buildTreeFocusPageFormat(
 
 	const sections: ComposerSection[] = [];
 
-	switch (resolvedFocus.kind) {
-		case 'db': {
+	switch (resolvedFocus.type) {
+		case DataModels.DB: {
 			sections.push(
 				...baseCardsForEntity(
 					`Warehouse connection ${resolvedFocus.db.name}. ${resolvedFocus.db.schemas.length} schema(s) available.`,
@@ -169,7 +170,7 @@ export function buildTreeFocusPageFormat(
 				),
 			);
 			sections.push({
-				kind: 'dataTable',
+				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-schemas',
 				title: `Schemas (${resolvedFocus.db.schemas.length})`,
 				columns: [
@@ -193,7 +194,7 @@ export function buildTreeFocusPageFormat(
 				},
 			};
 		}
-		case 'schema': {
+		case DataModels.SCHEMA: {
 			const s = resolvedFocus.schema;
 			sections.push(
 				...baseCardsForEntity(`Schema ${s.name} in ${s.database_name}.`, [
@@ -203,7 +204,7 @@ export function buildTreeFocusPageFormat(
 				]),
 			);
 			sections.push({
-				kind: 'dataTable',
+				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-tables',
 				title: `Tables (${s.tables.length})`,
 				columns: [
@@ -227,7 +228,7 @@ export function buildTreeFocusPageFormat(
 				},
 			};
 		}
-		case 'table': {
+		case DataModels.TABLE: {
 			const t = resolvedFocus.table;
 			sections.push(
 				...baseCardsForEntity(t.description, [
@@ -238,7 +239,7 @@ export function buildTreeFocusPageFormat(
 				]),
 			);
 			sections.push({
-				kind: 'dataTable',
+				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-columns',
 				title: `Columns (${t.columns.length})`,
 				columns: [
@@ -264,7 +265,7 @@ export function buildTreeFocusPageFormat(
 				},
 			};
 		}
-		case 'column': {
+		case DataModels.COLUMN: {
 			const c = resolvedFocus.column;
 			sections.push(
 				...baseCardsForEntity(`Column ${c.name} in ${c.table_name}.`, [

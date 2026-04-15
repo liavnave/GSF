@@ -3,6 +3,7 @@
 import { forwardRef, type ReactNode } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import type { Breadcrumb } from '@/types/breadcrumbs';
+import { ComposerSectionKind } from '@/enums/datasources';
 import { isComposerSection, type ComposerSection } from '@/types/composer-section';
 
 export type SinglePageComposerProps = {
@@ -28,8 +29,8 @@ type EditHeaderProps = {
 };
 
 function composerSectionHeading(section: ComposerSection): string {
-	switch (section.kind) {
-		case 'loadingPanel':
+	switch (section.type) {
+		case ComposerSectionKind.LOADING_PANEL:
 			return section.message;
 		default:
 			return section.title;
@@ -37,8 +38,8 @@ function composerSectionHeading(section: ComposerSection): string {
 }
 
 function renderComposerSection(section: ComposerSection): ReactNode {
-	switch (section.kind) {
-		case 'textCard':
+	switch (section.type) {
+		case ComposerSectionKind.TEXT_CARD:
 			return (
 				<div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
 					<h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -49,7 +50,7 @@ function renderComposerSection(section: ComposerSection): ReactNode {
 					</p>
 				</div>
 			);
-		case 'infoGrid':
+		case ComposerSectionKind.INFO_GRID:
 			return (
 				<div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
 					<h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -72,7 +73,7 @@ function renderComposerSection(section: ComposerSection): ReactNode {
 					</dl>
 				</div>
 			);
-		case 'dataTable':
+		case ComposerSectionKind.DATA_TABLE:
 			return (
 				<div className="rounded-lg border border-zinc-200/90 bg-white/90 p-5 shadow-sm ring-1 ring-zinc-950/[0.04] dark:border-zinc-700/90 dark:bg-zinc-950/50 dark:ring-white/[0.06]">
 					<h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -113,7 +114,7 @@ function renderComposerSection(section: ComposerSection): ReactNode {
 					</div>
 				</div>
 			);
-		case 'loadingPanel':
+		case ComposerSectionKind.LOADING_PANEL:
 			return (
 				<div
 					className="flex min-h-[min(50dvh,420px)] flex-col items-center justify-center gap-4 rounded-lg border border-zinc-200/80 bg-white/70 px-8 py-12 dark:border-zinc-700/80 dark:bg-zinc-950/40"
