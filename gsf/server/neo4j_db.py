@@ -142,7 +142,7 @@ def _schema_payload(
 # ---------------------------------------------------------------------------
 
 
-def list_databases_light() -> list[dict[str, Any]]:
+def list_databases_with_counts() -> list[dict[str, Any]]:
     """Return Database rows with schema counts only; ``schemas`` is empty for lazy trees."""
     driver = get_driver()
     try:

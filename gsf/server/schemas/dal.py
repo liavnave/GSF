@@ -8,7 +8,7 @@ from server import neo4j_db
 
 
 def list_databases() -> list[dict[str, Any]]:
-    return neo4j_db.list_databases_light()
+    return neo4j_db.list_databases_with_counts()
 
 
 def list_schemas_for_database(db_id: str) -> list[dict[str, Any]]:
