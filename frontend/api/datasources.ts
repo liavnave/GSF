@@ -39,10 +39,9 @@ export const datasources = {
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<CatalogBranchPayload>>(
-				'datasources/dbs/catalog-branch',
-				catalogBranchParams,
-			)
+			.get<
+				ResponseWithCount<CatalogBranchPayload>
+			>('datasources/dbs/catalog-branch', catalogBranchParams)
 			.finally(() => {
 				catalogBranchMap.delete(key);
 			});
