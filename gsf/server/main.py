@@ -8,14 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from server import neo4j_db
-from server.schemas.router import router as schemas_router
+from infra.Neo4jConnection import close_driver
+from server.datasources.router import router as datasources_router
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
-    neo4j_db.close_driver()
+    close_driver()
 
 
 app = FastAPI(title="GSF API", lifespan=lifespan)
@@ -31,7 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(schemas_router, prefix="/api", tags=["datasources", "connectors"])
+app.include_router(
+    datasources_router, prefix="/api", tags=["datasources", "connectors"]
+)
 
 
 @app.exception_handler(StarletteHTTPException)

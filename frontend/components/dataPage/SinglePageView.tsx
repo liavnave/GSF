@@ -29,7 +29,7 @@ export const SinglePageView = ({
 	const prevCoreRef = useRef<{
 		dataId: string;
 		treeFocusId: string | null;
-		getSinglePage: (a: string, b: string | null) => Promise<SinglePageFormat>;
+		getSinglePage: (dataId: string, treeFocusId: string | null) => Promise<SinglePageFormat>;
 	} | null>(null);
 
 	useEffect(() => {

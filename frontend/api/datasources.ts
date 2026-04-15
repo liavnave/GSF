@@ -1,11 +1,12 @@
 import { requests } from './requests';
 import type { CatalogBranchPayload, Database } from '@/types/datasources';
+import type { Params } from '@/types/params';
 import type { ResponseWithCount, ResponseWithError } from './types';
 
 type CatalogBranchResponse = ResponseWithError<ResponseWithCount<CatalogBranchPayload>>;
 
 /** Coalesce concurrent identical catalog-branch calls (Strict Mode, hydrate + tree, etc.). */
-const catalogBranchInflight = new Map<string, Promise<CatalogBranchResponse>>();
+const catalogBranchMap = new Map<string, Promise<CatalogBranchResponse>>();
 
 function catalogBranchRequestKey(
 	dbId: string,
@@ -26,24 +27,27 @@ export const datasources = {
 		opts: { schemaName?: string; tableName?: string } = {},
 	): Promise<CatalogBranchResponse> => {
 		const key = catalogBranchRequestKey(dbId, opts);
-		const pending = catalogBranchInflight.get(key);
+		const pending = catalogBranchMap.get(key);
 		if (pending != null) return pending;
 
+		const catalogBranchParams: Params = { db_id: dbId };
+		if (opts.schemaName != null && opts.schemaName !== '') {
+			catalogBranchParams.schema_name = opts.schemaName;
+		}
+		if (opts.tableName != null && opts.tableName !== '') {
+			catalogBranchParams.table_name = opts.tableName;
+		}
+
 		const promise = requests
-			.get<ResponseWithCount<CatalogBranchPayload>>('datasources/dbs/catalog-branch', {
-				db_id: dbId,
-				...(opts.schemaName != null && opts.schemaName !== ''
-					? { schema_name: opts.schemaName }
-					: {}),
-				...(opts.tableName != null && opts.tableName !== ''
-					? { table_name: opts.tableName }
-					: {}),
-			})
+			.get<ResponseWithCount<CatalogBranchPayload>>(
+				'datasources/dbs/catalog-branch',
+				catalogBranchParams,
+			)
 			.finally(() => {
-				catalogBranchInflight.delete(key);
+				catalogBranchMap.delete(key);
 			});
 
-		catalogBranchInflight.set(key, promise);
+		catalogBranchMap.set(key, promise);
 		return promise;
 	},
 };

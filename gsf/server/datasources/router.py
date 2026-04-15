@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from server.schemas import dal
+from server.datasources import dal
 
 router = APIRouter()
 

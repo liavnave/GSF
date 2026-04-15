@@ -152,7 +152,7 @@ class PostgresDatabase(SQLDatabase):
         Returns a summary dict with counts of synced schemas, tables, and
         columns.
         """
-        from server import neo4j_db
+        from infra.Neo4jConnection import get_driver
 
         tables_df = self.get_tables()
         columns_df = self.get_columns()
@@ -165,77 +165,81 @@ class PostgresDatabase(SQLDatabase):
                     (pk["database"], pk["schema"], pk["table_name"], pk["column_name"])
                 )
 
-        driver = neo4j_db.get_driver()
+        driver = get_driver()
         db_name = self._db_name
+        _db_kw = {"database_": "neo4j"}
 
-        with driver.session(database=neo4j_db.CATALOG_DB) as session:
-            session.run(
-                "MERGE (db:Database {name: $name})",
-                name=db_name,
-            )
+        driver.execute_query(
+            "MERGE (db:Database {name: $name})",
+            name=db_name,
+            **_db_kw,
+        )
 
-            schemas_synced: set[str] = set()
-            tables_synced = 0
-            columns_synced = 0
+        schemas_synced: set[str] = set()
+        tables_synced = 0
+        columns_synced = 0
 
-            for _, tbl in tables_df.iterrows():
-                s_name = tbl["schema"]
-                t_name = tbl["table_name"]
+        for _, tbl in tables_df.iterrows():
+            s_name = tbl["schema"]
+            t_name = tbl["table_name"]
 
-                if s_name not in schemas_synced:
-                    session.run(
-                        """
-                        MERGE (s:Schema {database_name: $db, name: $schema})
-                        WITH s
-                        MATCH (db:Database {name: $db})
-                        MERGE (db)-[:HAS_SCHEMA]->(s)
-                        """,
-                        db=db_name,
-                        schema=s_name,
-                    )
-                    schemas_synced.add(s_name)
-
-                session.run(
+            if s_name not in schemas_synced:
+                driver.execute_query(
                     """
-                    MERGE (t:Table {database_name: $db, schema_name: $schema,
+                    MERGE (s:Schema {database_name: $db, name: $schema})
+                    WITH s
+                    MATCH (db:Database {name: $db})
+                    MERGE (db)-[:HAS_SCHEMA]->(s)
+                    """,
+                    db=db_name,
+                    schema=s_name,
+                    **_db_kw,
+                )
+                schemas_synced.add(s_name)
+
+            driver.execute_query(
+                """
+                MERGE (t:Table {database_name: $db, schema_name: $schema,
+                                name: $table})
+                WITH t
+                MATCH (s:Schema {database_name: $db, name: $schema})
+                MERGE (s)-[:HAS_TABLE]->(t)
+                """,
+                db=db_name,
+                schema=s_name,
+                table=t_name,
+                **_db_kw,
+            )
+            tables_synced += 1
+
+        tbl_cols = columns_df.groupby(["schema", "table_name"])
+        for (s_name, t_name), group in tbl_cols:
+            for _, col in group.iterrows():
+                is_pk = (db_name, s_name, t_name, col["column_name"]) in pk_set
+                driver.execute_query(
+                    """
+                    MERGE (c:Column {database_name: $db, schema_name: $schema,
+                                     table_name: $table, name: $col})
+                    SET c.data_type        = $dtype,
+                        c.is_nullable      = $nullable,
+                        c.ordinal_position = $pos,
+                        c.is_primary_key   = $is_pk
+                    WITH c
+                    MATCH (t:Table {database_name: $db, schema_name: $schema,
                                     name: $table})
-                    WITH t
-                    MATCH (s:Schema {database_name: $db, name: $schema})
-                    MERGE (s)-[:HAS_TABLE]->(t)
+                    MERGE (t)-[:HAS_COLUMN]->(c)
                     """,
                     db=db_name,
                     schema=s_name,
                     table=t_name,
+                    col=col["column_name"],
+                    dtype=col["data_type"],
+                    nullable=col["is_nullable"],
+                    pos=int(col["ordinal_position"]),
+                    is_pk=is_pk,
+                    **_db_kw,
                 )
-                tables_synced += 1
-
-            tbl_cols = columns_df.groupby(["schema", "table_name"])
-            for (s_name, t_name), group in tbl_cols:
-                for _, col in group.iterrows():
-                    is_pk = (db_name, s_name, t_name, col["column_name"]) in pk_set
-                    session.run(
-                        """
-                        MERGE (c:Column {database_name: $db, schema_name: $schema,
-                                         table_name: $table, name: $col})
-                        SET c.data_type        = $dtype,
-                            c.is_nullable      = $nullable,
-                            c.ordinal_position = $pos,
-                            c.is_primary_key   = $is_pk
-                        WITH c
-                        MATCH (t:Table {database_name: $db, schema_name: $schema,
-                                        name: $table})
-                        MERGE (t)-[:HAS_COLUMN]->(c)
-                        """,
-                        db=db_name,
-                        schema=s_name,
-                        table=t_name,
-                        col=col["column_name"],
-                        dtype=col["data_type"],
-                        nullable=col["is_nullable"],
-                        pos=int(col["ordinal_position"]),
-                        is_pk=is_pk,
-                    )
-                    columns_synced += 1
+                columns_synced += 1
 
         return {
             "database": db_name,
