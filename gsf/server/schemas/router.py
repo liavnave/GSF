@@ -38,7 +38,7 @@ def list_databases() -> dict:
     return _count_payload(rows)
 
 
-@router.get("/datasources/dbs/{db_id}/catalog-branch")
+@router.get("/datasources/dbs/catalog-branch")
 def catalog_branch(
     db_id: str,
     schema_name: str | None = None,

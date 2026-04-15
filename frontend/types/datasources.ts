@@ -39,7 +39,7 @@ export type Database = {
 	schemas: Schema[];
 };
 
-/** Response body inside `data` from GET .../catalog-branch. */
+/** Response body inside `data` from GET .../dbs/catalog-branch?db_id=... */
 export type CatalogBranchPayload = {
 	/** All databases (light rows); keeps multi-db tree in sync in one response. */
 	dbs: Database[];

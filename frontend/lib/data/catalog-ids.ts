@@ -15,7 +15,3 @@ export function splitTableId(tableId: string): readonly [string, string, string]
 	}
 	return [p[0], p[1], p[2]] as const;
 }
-
-export function encPath(s: string): string {
-	return encodeURIComponent(s);
-}

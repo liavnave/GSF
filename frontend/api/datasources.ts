@@ -1,6 +1,5 @@
 import { requests } from './requests';
 import type { CatalogBranchPayload, Database } from '@/types/datasources';
-import { encPath } from '@/lib/data/catalog-ids';
 import type { ResponseWithCount, ResponseWithError } from './types';
 
 type CatalogBranchResponse = ResponseWithError<ResponseWithCount<CatalogBranchPayload>>;
@@ -31,17 +30,15 @@ export const datasources = {
 		if (pending != null) return pending;
 
 		const promise = requests
-			.get<ResponseWithCount<CatalogBranchPayload>>(
-				`datasources/dbs/${encPath(dbId)}/catalog-branch`,
-				{
-					...(opts.schemaName != null && opts.schemaName !== ''
-						? { schema_name: opts.schemaName }
-						: {}),
-					...(opts.tableName != null && opts.tableName !== ''
-						? { table_name: opts.tableName }
-						: {}),
-				},
-			)
+			.get<ResponseWithCount<CatalogBranchPayload>>('datasources/dbs/catalog-branch', {
+				db_id: dbId,
+				...(opts.schemaName != null && opts.schemaName !== ''
+					? { schema_name: opts.schemaName }
+					: {}),
+				...(opts.tableName != null && opts.tableName !== ''
+					? { table_name: opts.tableName }
+					: {}),
+			})
 			.finally(() => {
 				catalogBranchInflight.delete(key);
 			});
