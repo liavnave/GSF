@@ -7,7 +7,7 @@ import type { Column, Database, Schema, Table } from '@/types/datasources';
 import { DataModels } from '@/enums/datasources';
 import { datasources } from '@/api/datasources';
 import { catalogPathFromFocusId } from '@/lib/data/data-catalog-path';
-import { splitSchemaId, splitTableId } from '@/lib/data/catalog-ids';
+import { splitId } from '@/lib/data/catalog-ids';
 import {
 	applyCatalogBranchPayload,
 	catalogStructureFingerprint,
@@ -475,7 +475,7 @@ export function DataTree({
 
 	const loadTablesForSchema = useCallback(
 		async (schemaId: string) => {
-			const [dbId, schemaName] = splitSchemaId(schemaId);
+			const [dbId, schemaName] = splitId(schemaId, 2);
 			const res = await datasources.getCatalogBranch(dbId, { schemaName });
 			if (res.error === true || !res.data) return;
 			setDatabases((prev) => {
@@ -489,7 +489,7 @@ export function DataTree({
 
 	const loadTableColumns = useCallback(
 		async (tableId: string) => {
-			const [dbId, schemaName, tableName] = splitTableId(tableId);
+			const [dbId, schemaName, tableName] = splitId(tableId, 3);
 			const res = await datasources.getCatalogBranch(dbId, { schemaName, tableName });
 			if (res.error === true || !res.data) return;
 			setDatabases((prev) => {
