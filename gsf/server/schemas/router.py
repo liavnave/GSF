@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
-from server.connectors.postgres import PostgresDatabase
 from server.schemas import dal
 
 router = APIRouter()
