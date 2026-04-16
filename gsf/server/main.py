@@ -6,15 +6,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from infra.Neo4jConnection import close_driver
+from nemo_retriever.tabular_data.neo4j import neo4j_connection
 from server.datasources.router import router as datasources_router
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
-    close_driver()
+    if neo4j_connection._conn is not None:
+        neo4j_connection._conn.close()
+        neo4j_connection._conn = None
 
 
 app = FastAPI(title="GSF API", lifespan=lifespan)

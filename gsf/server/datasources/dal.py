@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from infra.Neo4jConnection import get_driver
+from nemo_retriever.tabular_data.ingestion.model.reserved_words import Labels, RelTypes
+from server.env import get_nemo_neo4j_conn
+
+_LEGACY_REL_DB_TO_SCHEMA = "HAS_SCHEMA"
+_LEGACY_REL_SCHEMA_TO_TABLE = "HAS_TABLE"
+_LEGACY_REL_TABLE_TO_COLUMN = "HAS_COLUMN"
+
+
 # ---------------------------------------------------------------------------
 # Graph queries (public API for routers / services)
 # ---------------------------------------------------------------------------
@@ -12,17 +19,16 @@ from infra.Neo4jConnection import get_driver
 
 def list_databases() -> list[dict[str, Any]]:
     """Return Database rows with schema counts only; ``schemas`` is empty for lazy trees."""
-    driver = get_driver()
+    neo4j_conn = get_nemo_neo4j_conn()
 
-    # Default routing is WRITE — same practical behavior as Session.run() on
-    # bolt://; READ routing can fail on standalone instances.
-    rows, _, _ = driver.execute_query(
-        """
-        MATCH (db:Database)-[:CONTAINS]->(s:Schema)
-        RETURN db.id as id, db.name as name, count(s) as schema_count
+    rows = neo4j_conn.query_read(
+        f"""
+        MATCH (db)-[r]->(s:{Labels.SCHEMA})
+        WHERE db:{Labels.DB} OR db:Database
+          AND type(r) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_DB_TO_SCHEMA}']
+        RETURN coalesce(db.id, db.name) as id, db.name as name, count(s) as schema_count
         ORDER BY name
         """,
-        database_="neo4j",
     )
 
     return [
@@ -44,19 +50,24 @@ def list_schemas_for_database(db_id: str) -> dict[str, Any] | None:
 
     Returns ``None`` if no ``Database`` matches ``db_id``.
     """
-    driver = get_driver()
-
-    rows, _, _ = driver.execute_query(
-        """
-        MATCH (db:Database {id: $db_id})-[:CONTAINS]->(s:Schema)-[:CONTAINS]->(t:Table)
-        WITH s.id AS id, s.name AS schema_name, count(t) AS tables_count
+    neo4j_conn = get_nemo_neo4j_conn()
+    rows = neo4j_conn.query_read(
+        f"""
+        MATCH (db)-[r1]->(s:{Labels.SCHEMA})-[r2]->(t:{Labels.TABLE})
+        WHERE (db:{Labels.DB} OR db:Database)
+          AND (db.id = $db_id OR db.name = $db_id)
+          AND type(r1) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_DB_TO_SCHEMA}']
+          AND type(r2) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_SCHEMA_TO_TABLE}']
+        WITH coalesce(s.id, s.name) AS id, s.name AS schema_name, count(t) AS tables_count
         ORDER BY schema_name
-        WITH collect({id: id, schema_name: schema_name, tables_count: tables_count}) AS schemas
+        WITH collect({{id: id, schema_name: schema_name, tables_count: tables_count}}) AS schemas
         RETURN size(schemas) AS schemas_count, schemas
         """,
-        db_id=db_id,
-        database_="neo4j",
+        {"db_id": db_id},
     )
+
+    if not rows:
+        return None
 
     record = rows[0]
     return {
@@ -75,24 +86,27 @@ def list_tables_for_schema(
     Each table dict contains ``database_name``, ``schema_name``, ``name``,
     and ``columns_count``.
     """
-    driver = get_driver()
-
-    rows, _, _ = driver.execute_query(
-        """
-        MATCH (s:Schema {id: $schema_id})-[:CONTAINS]->(t:Table)-[:CONTAINS]->(c:Column)
-        RETURN t.id AS id,
+    neo4j_conn = get_nemo_neo4j_conn()
+    rows = neo4j_conn.query_read(
+        f"""
+        MATCH (s:{Labels.SCHEMA})-[r1]->(t:{Labels.TABLE})-[r2]->(c:{Labels.COLUMN})
+        WHERE (s.id = $schema_id OR s.name = $schema_id)
+          AND type(r1) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_SCHEMA_TO_TABLE}']
+          AND type(r2) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_TABLE_TO_COLUMN}']
+        RETURN coalesce(t.id, t.name) AS id,
                t.name AS name,
                t.db_name AS db_name,
                t.schema_name AS schema_name,
                count(c) AS columns_count
         ORDER BY name
         """,
-        schema_id=schema_id,
-        database_name=database_name,
-        database_="neo4j",
+        {
+            "schema_id": schema_id,
+            "database_name": database_name,
+        },
     )
 
-    return [dict(r) for r in rows]
+    return rows
 
 
 def list_columns_for_table(table_id: str) -> dict[str, Any] | None:
@@ -102,25 +116,25 @@ def list_columns_for_table(table_id: str) -> dict[str, Any] | None:
     node), ``columns_count``, and ``columns`` — a list of
     ``{ordinal_position, column_name, data_type}`` dicts.
     """
-    driver = get_driver()
-
-    rows, _, _ = driver.execute_query(
-        """
-        MATCH (t:Table {id: $table_id})-[:CONTAINS]->(c:Column)
+    neo4j_conn = get_nemo_neo4j_conn()
+    rows = neo4j_conn.query_read(
+        f"""
+        MATCH (t:{Labels.TABLE})-[r]->(c:{Labels.COLUMN})
+        WHERE (t.id = $table_id OR t.name = $table_id)
+          AND type(r) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_TABLE_TO_COLUMN}']
         WITH t, c ORDER BY c.ordinal_position
-        WITH t, collect({
+        WITH t, collect({{
                  ordinal_position: c.ordinal_position,
                  column_name: c.name,
                  data_type: c.data_type
-             }) AS columns
+             }}) AS columns
         RETURN t.name AS table_name,
                t.schema_name AS schema_name,
                t.db_name AS db_name,
                size(columns) AS columns_count,
                columns
         """,
-        table_id=table_id,
-        database_="neo4j",
+        {"table_id": table_id},
     )
 
-    return dict(rows[0])
+    return rows[0]
