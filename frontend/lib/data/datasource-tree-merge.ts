@@ -1,4 +1,4 @@
-import type { CatalogBranchPayload, Column, Database, Schema, Table } from '@/types/datasources';
+import type { Column, Database, Schema, Table } from '@/types/datasources';
 
 export function mergeSchemasIntoDatabase(
 	dbs: Database[],
@@ -19,36 +19,7 @@ export function mergeTablesIntoSchema(
 	}));
 }
 
-/** Merge fresh DB roots from API with already-expanded `schemas` trees in memory. */
-export function mergeDatabaseRootsFromPayload(fresh: Database[], prev: Database[]): Database[] {
-	const prevById = new Map(prev.map((d) => [d.id, d]));
-	return fresh.map((d) => {
-		const old = prevById.get(d.id);
-		if (!old) return d;
-		return { ...d, schemas: old.schemas };
-	});
-}
-
-/** Apply one catalog-branch API response onto the database list. */
-export function applyCatalogBranchPayload(
-	dbs: Database[],
-	dbId: string,
-	payload: CatalogBranchPayload,
-	branch: { schemaName?: string; tableName?: string },
-): Database[] {
-	const nextRoots = mergeDatabaseRootsFromPayload(payload.dbs, dbs);
-	let next = mergeSchemasIntoDatabase(nextRoots, dbId, payload.schemas);
-	const { schemaName, tableName } = branch;
-	if (payload.tables != null && schemaName !== undefined && schemaName !== '') {
-		next = mergeTablesIntoSchema(next, `${dbId}|${schemaName}`, payload.tables);
-	}
-	if (payload.columns != null && schemaName && tableName) {
-		next = mergeColumnsIntoTable(next, `${dbId}|${schemaName}|${tableName}`, payload.columns);
-	}
-	return next;
-}
-
-/** Upsert columns for one table (merged from catalog-branch payload). */
+/** Upsert columns for one table (merged from columns API). */
 export function mergeColumnsIntoTable(
 	dbs: Database[],
 	tableId: string,

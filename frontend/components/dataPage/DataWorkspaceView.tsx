@@ -8,7 +8,11 @@ import { SinglePageView, type SinglePageFormat } from './SinglePageView';
 import type { Database } from '@/types/datasources';
 import { isCatalogBranchLoadedForFocus } from '@/lib/data/catalog-branch-loaded';
 import { WORKSPACE_ROOT_PARENT_ID, buildTreeFocusPageFormat } from '@/lib/data/tree-focus-page';
-import { applyCatalogBranchPayload } from '@/lib/data/datasource-tree-merge';
+import {
+	mergeColumnsIntoTable,
+	mergeSchemasIntoDatabase,
+	mergeTablesIntoSchema,
+} from '@/lib/data/datasource-tree-merge';
 import { datasources } from '@/api/datasources';
 
 export type DataWorkspaceViewProps = {
@@ -61,7 +65,7 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 
 	const hydrateBranchForFocus = useCallback(async (focusId: string | null) => {
 		if (!focusId) return;
-		const parts = focusId.split('|');
+		const parts = focusId.split('|').filter((p) => p.length > 0);
 		const dbId = parts[0];
 		if (!dbId) return;
 
@@ -69,17 +73,37 @@ export function DataWorkspaceView({ databases: propDatabases, loadError }: DataW
 		if (!dbs.some((d) => d.id === dbId)) return;
 		if (isCatalogBranchLoadedForFocus(dbs, focusId)) return;
 
-		const schemaName = parts[1];
-		const tableName = parts[2];
-		const res = await datasources.getCatalogBranch(dbId, {
-			...(schemaName !== undefined && schemaName !== '' ? { schemaName } : {}),
-			...(tableName !== undefined && tableName !== '' ? { tableName } : {}),
-		});
-		if (res.error === true || !res.data) return;
-		databasesRef.current = applyCatalogBranchPayload(databasesRef.current, dbId, res.data, {
-			schemaName,
-			tableName,
-		});
+		const schemaId = parts[1];
+		const tableId = parts[2];
+
+		let next = databasesRef.current;
+		const db = next.find((d) => d.id === dbId);
+		if (db && db.schemas.length === 0 && (db.num_of_schemas ?? 0) > 0) {
+			const r = await datasources.getSchemasForDatabase(dbId);
+			if (r.error === true || !r.data) return;
+			next = mergeSchemasIntoDatabase(next, dbId, r.data);
+		}
+
+		if (schemaId !== undefined && schemaId !== '') {
+			const sch = next.find((d) => d.id === dbId)?.schemas.find((s) => s.id === schemaId);
+			if (sch && sch.tables.length === 0 && (sch.num_of_tables ?? 0) > 0) {
+				const r = await datasources.getTablesForSchema(schemaId);
+				if (r.error === true || !r.data) return;
+				next = mergeTablesIntoSchema(next, schemaId, r.data);
+			}
+		}
+
+		if (parts.length >= 4 && tableId !== undefined && tableId !== '') {
+			const sch2 = next.find((d) => d.id === dbId)?.schemas.find((s) => s.id === schemaId);
+			const tbl = sch2?.tables.find((t) => t.id === tableId);
+			if (tbl && tbl.columns.length === 0 && tbl.num_of_columns > 0) {
+				const r = await datasources.getColumnsForTable(tableId);
+				if (r.error === true || !r.data) return;
+				next = mergeColumnsIntoTable(next, tableId, r.data);
+			}
+		}
+
+		databasesRef.current = next;
 	}, []);
 
 	const getSinglePage = useCallback(

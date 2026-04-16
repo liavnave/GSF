@@ -27,6 +27,11 @@ def _refresh_env_from_files() -> None:
     load_dotenv(_ENV_GSF, override=True)
 
 
+def load_repository_env() -> None:
+    """Load repo root ``.env`` then ``gsf/.env`` (later overrides). Safe to call repeatedly."""
+    _refresh_env_from_files()
+
+
 def neo4j_settings() -> tuple[str, str, str]:
     """Return ``(uri, user, password)`` from the environment after loading ``.env`` files."""
     _refresh_env_from_files()

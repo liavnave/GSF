@@ -20,44 +20,12 @@ export type TreeResolved =
 			column: Column;
 	  };
 
-function inColumns(
-	db: Database,
-	schema: Schema,
-	table: Table,
-	focusId: string,
-): TreeResolved | null {
-	for (const column of table.columns) {
-		if (column.id === focusId) {
-			return { type: DataModels.COLUMN, db, schema, table, column };
-		}
-	}
-	return null;
-}
-
-function inTables(db: Database, schema: Schema, focusId: string): TreeResolved | null {
-	for (const table of schema.tables) {
-		if (table.id === focusId) {
-			return { type: DataModels.TABLE, db, schema, table };
-		}
-		const c = inColumns(db, schema, table, focusId);
-		if (c) return c;
-	}
-	return null;
-}
-
-function inSchemas(db: Database, focusId: string): TreeResolved | null {
-	for (const schema of db.schemas) {
-		if (schema.id === focusId) {
-			return { type: DataModels.SCHEMA, db, schema };
-		}
-		const t = inTables(db, schema, focusId);
-		if (t) return t;
-	}
-	return null;
+function focusSegments(focusId: string): string[] {
+	return focusId.split('|').filter((p) => p.length > 0);
 }
 
 function treePendingColumnFocus(focusId: string, databases: Database[]): TreeResolved {
-	const parts = focusId.split('|');
+	const parts = focusSegments(focusId);
 	if (parts.length !== 4) return { type: TreeFocusState.NONE };
 	const dbId = parts[0];
 	if (!dbId || !databases.some((d) => d.id === dbId)) return { type: TreeFocusState.NONE };
@@ -67,12 +35,35 @@ function treePendingColumnFocus(focusId: string, databases: Database[]): TreeRes
 
 export function resolveTreeNode(focusId: string | null, databases: Database[]): TreeResolved {
 	if (!focusId) return { type: TreeFocusState.NONE };
+	const parts = focusSegments(focusId);
+	if (parts.length === 0) return { type: TreeFocusState.NONE };
+
 	for (const db of databases) {
-		if (db.id === focusId) return { type: DataModels.DB, db };
-		const s = inSchemas(db, focusId);
-		if (s) return s;
+		if (parts[0] !== db.id) continue;
+		if (parts.length === 1) return { type: DataModels.DB, db };
+
+		for (const schema of db.schemas) {
+			if (parts[1] !== schema.id) continue;
+			if (parts.length === 2) return { type: DataModels.SCHEMA, db, schema };
+
+			for (const table of schema.tables) {
+				if (parts[2] !== table.id) continue;
+				if (parts.length === 3) return { type: DataModels.TABLE, db, schema, table };
+
+				for (const column of table.columns) {
+					if (parts.length === 4 && parts[3] === column.id) {
+						return { type: DataModels.COLUMN, db, schema, table, column };
+					}
+				}
+			}
+		}
 	}
-	return treePendingColumnFocus(focusId, databases);
+
+	if (parts.length === 4 && databases.some((d) => d.id === parts[0])) {
+		return treePendingColumnFocus(focusId, databases);
+	}
+
+	return { type: TreeFocusState.NONE };
 }
 
 function baseCardsForEntity(

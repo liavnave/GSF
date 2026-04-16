@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 import psycopg2
@@ -141,112 +141,6 @@ class PostgresDatabase(SQLDatabase):
             ORDER BY kcu.table_schema, kcu.table_name, kcu.column_name
         """
         return self.execute(sql)
-
-    # ------------------------------------------------------------------
-    # Catalog sync — push introspected metadata into the Neo4j graph
-    # ------------------------------------------------------------------
-
-    def sync_to_catalog(self) -> dict[str, Any]:
-        """Introspect this Postgres database and upsert into the Neo4j catalog.
-
-        Returns a summary dict with counts of synced schemas, tables, and
-        columns.
-        """
-        from infra.Neo4jConnection import get_driver
-
-        tables_df = self.get_tables()
-        columns_df = self.get_columns()
-        pks_df = self.get_pks()
-
-        pk_set: set[tuple[str, str, str, str]] = set()
-        if not pks_df.empty:
-            for _, pk in pks_df.iterrows():
-                pk_set.add(
-                    (pk["database"], pk["schema"], pk["table_name"], pk["column_name"])
-                )
-
-        driver = get_driver()
-        db_name = self._db_name
-        _db_kw = {"database_": "neo4j"}
-
-        driver.execute_query(
-            "MERGE (db:Database {name: $name})",
-            name=db_name,
-            **_db_kw,
-        )
-
-        schemas_synced: set[str] = set()
-        tables_synced = 0
-        columns_synced = 0
-
-        for _, tbl in tables_df.iterrows():
-            s_name = tbl["schema"]
-            t_name = tbl["table_name"]
-
-            if s_name not in schemas_synced:
-                driver.execute_query(
-                    """
-                    MERGE (s:Schema {database_name: $db, name: $schema})
-                    WITH s
-                    MATCH (db:Database {name: $db})
-                    MERGE (db)-[:HAS_SCHEMA]->(s)
-                    """,
-                    db=db_name,
-                    schema=s_name,
-                    **_db_kw,
-                )
-                schemas_synced.add(s_name)
-
-            driver.execute_query(
-                """
-                MERGE (t:Table {database_name: $db, schema_name: $schema,
-                                name: $table})
-                WITH t
-                MATCH (s:Schema {database_name: $db, name: $schema})
-                MERGE (s)-[:HAS_TABLE]->(t)
-                """,
-                db=db_name,
-                schema=s_name,
-                table=t_name,
-                **_db_kw,
-            )
-            tables_synced += 1
-
-        tbl_cols = columns_df.groupby(["schema", "table_name"])
-        for (s_name, t_name), group in tbl_cols:
-            for _, col in group.iterrows():
-                is_pk = (db_name, s_name, t_name, col["column_name"]) in pk_set
-                driver.execute_query(
-                    """
-                    MERGE (c:Column {database_name: $db, schema_name: $schema,
-                                     table_name: $table, name: $col})
-                    SET c.data_type        = $dtype,
-                        c.is_nullable      = $nullable,
-                        c.ordinal_position = $pos,
-                        c.is_primary_key   = $is_pk
-                    WITH c
-                    MATCH (t:Table {database_name: $db, schema_name: $schema,
-                                    name: $table})
-                    MERGE (t)-[:HAS_COLUMN]->(c)
-                    """,
-                    db=db_name,
-                    schema=s_name,
-                    table=t_name,
-                    col=col["column_name"],
-                    dtype=col["data_type"],
-                    nullable=col["is_nullable"],
-                    pos=int(col["ordinal_position"]),
-                    is_pk=is_pk,
-                    **_db_kw,
-                )
-                columns_synced += 1
-
-        return {
-            "database": db_name,
-            "schemas": len(schemas_synced),
-            "tables": tables_synced,
-            "columns": columns_synced,
-        }
 
     # ------------------------------------------------------------------
     # Lifecycle

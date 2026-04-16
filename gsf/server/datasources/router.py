@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, HTTPException
 
 from server.datasources import dal
@@ -23,6 +21,56 @@ def _count_payload(data: object) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Catalog lazy tree (/api/schemas, /api/tables, /api/columns)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/schemas/{db_id}")
+def list_schemas_by_database(db_id: str) -> dict:
+    """Schemas for a database. ``db_id`` is element id, property ``id``, or ``Database.name``."""
+    try:
+        schemas = dal.list_schemas_for_database(db_id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    if schemas is None:
+        raise HTTPException(status_code=404, detail="Database not found")
+    return _count_payload(schemas)
+
+
+@router.get("/tables/{schema_id}")
+def list_tables_by_schema(
+    schema_id: str,
+    database_name: str | None = None,
+) -> dict:
+    """Tables under a schema (lazy tree). ``schema_id`` is element id, property ``id``, or name with ``database_name``."""
+    try:
+        rows = dal.list_tables_for_schema(schema_id, database_name=database_name)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _count_payload(rows)
+
+
+@router.get("/columns/{table_id}")
+def list_columns_by_table(
+    table_id: str,
+    database_name: str | None = None,
+    schema_name: str | None = None,
+) -> dict:
+    """Columns for a table. ``table_id`` is element id, property ``id``, or table name with ``database_name`` + ``schema_name``."""
+    try:
+        cols = dal.list_columns_for_table(
+            table_id,
+            database_name=database_name,
+            schema_name=schema_name,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    if cols is None:
+        raise HTTPException(status_code=404, detail="Table not found")
+    return _count_payload(cols)
+
+
+# ---------------------------------------------------------------------------
 # Datasource routes (/api/datasources)
 # ---------------------------------------------------------------------------
 
@@ -34,42 +82,3 @@ def list_databases() -> dict:
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return _count_payload(rows)
-
-
-@router.get("/datasources/dbs/catalog-branch")
-def catalog_branch(
-    db_id: str,
-    schema_name: str | None = None,
-    table_name: str | None = None,
-) -> dict[str, Any]:
-    """Catalog subtree: always schemas for db; optional tables + columns for one path.
-
-    Replaces separate /schemas, /tables, and /columns routes — one contract for the UI.
-    """
-    if table_name is not None and schema_name is None:
-        raise HTTPException(
-            status_code=400,
-            detail="schema_name is required when table_name is set",
-        )
-    try:
-        dbs = dal.list_databases()
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
-    try:
-        schemas = dal.list_schemas_for_database(db_id)
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
-    if not schemas:
-        raise HTTPException(status_code=404, detail="Database not found")
-    payload: dict[str, Any] = {"dbs": dbs, "schemas": schemas}
-    if schema_name is not None:
-        try:
-            payload["tables"] = dal.list_tables_for_schema(db_id, schema_name)
-        except RuntimeError as e:
-            raise HTTPException(status_code=503, detail=str(e)) from e
-    if schema_name is not None and table_name is not None:
-        cols = dal.list_columns_for_table(db_id, schema_name, table_name)
-        if cols is None:
-            raise HTTPException(status_code=404, detail="Table not found")
-        payload["columns"] = cols
-    return {"data": payload, "count": len(payload["dbs"])}

@@ -1,52 +1,84 @@
 import { requests } from './requests';
-import type { CatalogBranchPayload, Database } from '@/types/datasources';
+import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { Params } from '@/types/params';
-import type { ResponseWithCount, ResponseWithError } from './types';
+import type { ColumnsByTableResponse, ResponseWithCount, ResponseWithError, SchemasByDbResponse, TablesBySchemaResponse } from './types';
 
-type CatalogBranchResponse = ResponseWithError<ResponseWithCount<CatalogBranchPayload>>;
-
-/** Coalesce concurrent identical catalog-branch calls (Strict Mode, hydrate + tree, etc.). */
-const catalogBranchMap = new Map<string, Promise<CatalogBranchResponse>>();
-
-function catalogBranchRequestKey(
-	dbId: string,
-	opts: { schemaName?: string; tableName?: string },
-): string {
-	return [dbId, opts.schemaName ?? '', opts.tableName ?? ''].join('\0');
-}
+const schemasByDbMap = new Map<string, Promise<SchemasByDbResponse>>();
+const tablesBySchemaMap = new Map<string, Promise<TablesBySchemaResponse>>();
+const columnsByTableMap = new Map<string, Promise<ColumnsByTableResponse>>();
 
 export const datasources = {
 	getDBs: () => requests.get<ResponseWithCount<Database[]>>('datasources/dbs'),
 
-	/**
-	 * Single catalog API: schemas for db; pass schemaName and/or tableName to include
-	 * tables and columns for that path. Parallel callers with the same key share one HTTP request.
-	 */
-	getCatalogBranch: (
-		dbId: string,
-		opts: { schemaName?: string; tableName?: string } = {},
-	): Promise<CatalogBranchResponse> => {
-		const key = catalogBranchRequestKey(dbId, opts);
-		const pending = catalogBranchMap.get(key);
+	/** Schemas for one database; parallel callers with the same key share one HTTP request. */
+	getSchemasForDatabase: (dbId: string): Promise<SchemasByDbResponse> => {
+		const pending = schemasByDbMap.get(dbId);
 		if (pending != null) return pending;
 
-		const catalogBranchParams: Params = { db_id: dbId };
-		if (opts.schemaName != null && opts.schemaName !== '') {
-			catalogBranchParams.schema_name = opts.schemaName;
-		}
-		if (opts.tableName != null && opts.tableName !== '') {
-			catalogBranchParams.table_name = opts.tableName;
+		const promise = requests
+			.get<ResponseWithCount<Schema[]>>(
+				`schemas/${encodeURIComponent(dbId)}`,
+				{},
+			)
+			.finally(() => {
+				schemasByDbMap.delete(dbId);
+			});
+
+		schemasByDbMap.set(dbId, promise);
+		return promise;
+	},
+
+	/** Tables for one schema; parallel callers with the same key share one HTTP request. */
+	getTablesForSchema: (
+		schemaId: string,
+		opts: { databaseName?: string } = {},
+	): Promise<TablesBySchemaResponse> => {
+		const key = [schemaId, opts.databaseName ?? ''].join('\0');
+		const pending = tablesBySchemaMap.get(key);
+		if (pending != null) return pending;
+
+		const params: Params = {};
+		if (opts.databaseName != null && opts.databaseName !== '') {
+			params.database_name = opts.databaseName;
 		}
 
 		const promise = requests
-			.get<
-				ResponseWithCount<CatalogBranchPayload>
-			>('datasources/dbs/catalog-branch', catalogBranchParams)
+			.get<ResponseWithCount<Table[]>>(`tables/${encodeURIComponent(schemaId)}`, params)
 			.finally(() => {
-				catalogBranchMap.delete(key);
+				tablesBySchemaMap.delete(key);
 			});
 
-		catalogBranchMap.set(key, promise);
+		tablesBySchemaMap.set(key, promise);
+		return promise;
+	},
+
+	/** Columns for one table; parallel callers with the same key share one HTTP request. */
+	getColumnsForTable: (
+		tableId: string,
+		opts: { databaseName?: string; schemaName?: string } = {},
+	): Promise<ColumnsByTableResponse> => {
+		const key = [tableId, opts.databaseName ?? '', opts.schemaName ?? ''].join('\0');
+		const pending = columnsByTableMap.get(key);
+		if (pending != null) return pending;
+
+		const params: Params = {};
+		if (opts.databaseName != null && opts.databaseName !== '') {
+			params.database_name = opts.databaseName;
+		}
+		if (opts.schemaName != null && opts.schemaName !== '') {
+			params.schema_name = opts.schemaName;
+		}
+
+		const promise = requests
+			.get<ResponseWithCount<Column[]>>(
+				`columns/${encodeURIComponent(tableId)}`,
+				params,
+			)
+			.finally(() => {
+				columnsByTableMap.delete(key);
+			});
+
+		columnsByTableMap.set(key, promise);
 		return promise;
 	},
 };
