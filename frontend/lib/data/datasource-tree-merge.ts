@@ -27,9 +27,9 @@ export function mergeColumnsIntoTable(
 ): Database[] {
 	return dbs.map((db) => ({
 		...db,
-		schemas: db.schemas.map((s) => ({
+		schemas: (db.schemas ?? []).map((s) => ({
 			...s,
-			tables: s.tables.map((t) =>
+			tables: (s.tables ?? []).map((t) =>
 				t.id === tableId ? { ...t, columns, num_of_columns: columns.length } : t,
 			),
 		})),
@@ -37,12 +37,9 @@ export function mergeColumnsIntoTable(
 }
 
 function mergeTable(a: Table, b: Table): Table {
-	const pickCols =
-		b.columns.length > a.columns.length
-			? b.columns
-			: a.columns.length > 0
-				? a.columns
-				: b.columns;
+	const aCols = a.columns ?? [];
+	const bCols = b.columns ?? [];
+	const pickCols = bCols.length > aCols.length ? bCols : aCols.length > 0 ? aCols : bCols;
 	return {
 		...a,
 		...b,
@@ -52,13 +49,15 @@ function mergeTable(a: Table, b: Table): Table {
 }
 
 function mergeSchema(a: Schema, b: Schema): Schema {
-	const byId = new Map(a.tables.map((t) => [t.id, t]));
-	for (const t of b.tables) {
+	const aTables = a.tables ?? [];
+	const bTables = b.tables ?? [];
+	const byId = new Map(aTables.map((t) => [t.id, t]));
+	for (const t of bTables) {
 		const ex = byId.get(t.id);
 		byId.set(t.id, ex ? mergeTable(ex, t) : t);
 	}
-	const order = [...a.tables.map((t) => t.id)];
-	for (const t of b.tables) {
+	const order = [...aTables.map((t) => t.id)];
+	for (const t of bTables) {
 		if (!order.includes(t.id)) order.push(t.id);
 	}
 	const tables = order.map((id) => byId.get(id)!);
@@ -71,13 +70,15 @@ function mergeSchema(a: Schema, b: Schema): Schema {
 }
 
 function mergeDb(a: Database, b: Database): Database {
-	const byId = new Map(a.schemas.map((s) => [s.id, s]));
-	for (const s of b.schemas) {
+	const aSchemas = a.schemas ?? [];
+	const bSchemas = b.schemas ?? [];
+	const byId = new Map(aSchemas.map((s) => [s.id, s]));
+	for (const s of bSchemas) {
 		const ex = byId.get(s.id);
 		byId.set(s.id, ex ? mergeSchema(ex, s) : s);
 	}
-	const order = [...a.schemas.map((s) => s.id)];
-	for (const s of b.schemas) {
+	const order = [...aSchemas.map((s) => s.id)];
+	for (const s of bSchemas) {
 		if (!order.includes(s.id)) order.push(s.id);
 	}
 	const schemas = order.map((id) => byId.get(id)!);
@@ -108,13 +109,16 @@ export function mergeDatabaseCatalog(prev: Database[], incoming: Database[]): Da
 export function catalogStructureFingerprint(dbs: Database[]): string {
 	return dbs
 		.map((d) => {
-			const sc = d.schemas
+			const sc = (d.schemas ?? [])
 				.map((s) => {
-					const tb = s.tables.map((t) => `${t.id}:${t.columns.length}`).join(',');
-					return `${s.id}:${s.tables.length}:${tb}`;
+					const tables = s.tables ?? [];
+					const tb = tables
+						.map((t) => `${t.id}:${(t.columns ?? []).length}`)
+						.join(',');
+					return `${s.id}:${tables.length}:${tb}`;
 				})
 				.join(';');
-			return `${d.id}:${d.schemas.length}:${sc}`;
+			return `${d.id}:${(d.schemas ?? []).length}:${sc}`;
 		})
 		.join('|');
 }
