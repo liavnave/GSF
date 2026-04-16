@@ -20,7 +20,7 @@ export const datasources = {
 		if (pending != null) return pending;
 
 		const promise = requests
-			.get<SchemasResponse>(`schemas/${encodeURIComponent(dbId)}`, {})
+			.get<SchemasResponse>('schemas', { db_id: dbId })
 			.then((res): ApiResponse<Schema[]> => {
 				if (res.error) return res as unknown as ApiResponse<Schema[]>;
 				const raw = res as unknown as SchemasResponse;
@@ -44,16 +44,13 @@ export const datasources = {
 		const pending = tablesBySchemaMap.get(key);
 		if (pending != null) return pending;
 
-		const params: Params = {};
+		const params: Params = { schema_id: schemaId };
 		if (opts.databaseName != null && opts.databaseName !== '') {
 			params.database_name = opts.databaseName;
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<Omit<Table, 'columns'>[]>>(
-				`tables/${encodeURIComponent(schemaId)}`,
-				params,
-			)
+			.get<ResponseWithCount<Omit<Table, 'columns'>[]>>('tables', params)
 			.then((res): ApiResponse<Table[]> => {
 				if (res.error) return res as unknown as ApiResponse<Table[]>;
 				const tables: Table[] = res.data.map((t) => ({ ...t, columns: [] }));
@@ -68,27 +65,12 @@ export const datasources = {
 	},
 
 	/** Columns for one table; parallel callers with the same key share one HTTP request. */
-	getColumnsForTable: (
-		tableId: string,
-		opts: { databaseName?: string; schemaName?: string } = {},
-	): Promise<ApiResponse<Column[]>> => {
-		const key = [tableId, opts.databaseName ?? '', opts.schemaName ?? ''].join('\0');
-		const pending = columnsByTableMap.get(key);
+	getColumnsForTable: (tableId: string): Promise<ApiResponse<Column[]>> => {
+		const pending = columnsByTableMap.get(tableId);
 		if (pending != null) return pending;
 
-		const params: Params = {};
-		if (opts.databaseName != null && opts.databaseName !== '') {
-			params.database_name = opts.databaseName;
-		}
-		if (opts.schemaName != null && opts.schemaName !== '') {
-			params.schema_name = opts.schemaName;
-		}
-
 		const promise = requests
-			.get<ResponseWithCount<ColumnsEnvelope>>(
-				`columns/${encodeURIComponent(tableId)}`,
-				params,
-			)
+			.get<ResponseWithCount<ColumnsEnvelope>>('columns', { table_id: tableId })
 			.then((res): ApiResponse<Column[]> => {
 				if (res.error) return res as unknown as ApiResponse<Column[]>;
 				const envelope = res.data as unknown as ColumnsEnvelope;
@@ -101,10 +83,10 @@ export const datasources = {
 				return { data: columns, count: columns.length };
 			})
 			.finally(() => {
-				columnsByTableMap.delete(key);
+				columnsByTableMap.delete(tableId);
 			});
 
-		columnsByTableMap.set(key, promise);
+		columnsByTableMap.set(tableId, promise);
 		return promise;
 	},
 };
