@@ -240,12 +240,7 @@ function TableBlock({
 	const hasChildren = table.columns_count > 0;
 
 	useEffect(() => {
-		if (
-			open &&
-			!fetchedOnce.current &&
-			table.columns.length === 0 &&
-			table.columns_count > 0
-		) {
+		if (open && !fetchedOnce.current && table.columns.length === 0 && table.columns_count > 0) {
 			fetchedOnce.current = true;
 			onLoadColumns(tableLoadRef);
 		}
@@ -270,11 +265,11 @@ function TableBlock({
 			/>
 			{open && table.columns.length > 0
 				? table.columns.map((col) => (
-					<ColumnBlock
-						key={col.column_name}
-						depth={depth + 1}
-						column={col}
-						columnFocusPath={`${tableFocusPath}|${col.column_name}`}
+						<ColumnBlock
+							key={col.column_name}
+							depth={depth + 1}
+							column={col}
+							columnFocusPath={`${tableFocusPath}|${col.column_name}`}
 							selectedId={selectedId}
 							pathBase={pathBase}
 						/>
