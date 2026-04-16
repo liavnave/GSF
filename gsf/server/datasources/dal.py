@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from nemo_retriever.tabular_data.ingestion.model.reserved_words import Labels, RelTypes
+
 from infra.Neo4jConnection import get_neo4j_conn
+
+_LEGACY_REL_DB_TO_SCHEMA = "HAS_SCHEMA"
+_LEGACY_REL_SCHEMA_TO_TABLE = "HAS_TABLE"
+_LEGACY_REL_TABLE_TO_COLUMN = "HAS_COLUMN"
 # ---------------------------------------------------------------------------
 # Graph queries (public API for routers / services)
 # ---------------------------------------------------------------------------
@@ -15,9 +21,11 @@ def list_databases() -> list[dict[str, Any]]:
     neo4j_conn = get_neo4j_conn()
 
     rows = neo4j_conn.query_read(
-        """
-        MATCH (db:Database)-[:CONTAINS]->(s:Schema)
-        RETURN db.id as id, db.name as name, count(s) as schema_count
+        f"""
+        MATCH (db)-[r]->(s:{Labels.SCHEMA})
+        WHERE db:{Labels.DB} OR db:Database
+          AND type(r) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_DB_TO_SCHEMA}']
+        RETURN coalesce(db.id, db.name) as id, db.name as name, count(s) as schema_count
         ORDER BY name
         """,
     )
@@ -43,15 +51,22 @@ def list_schemas_for_database(db_id: str) -> dict[str, Any] | None:
     """
     neo4j_conn = get_neo4j_conn()
     rows = neo4j_conn.query_read(
-        """
-        MATCH (db:Database {id: $db_id})-[:CONTAINS]->(s:Schema)-[:CONTAINS]->(t:Table)
-        WITH s.id AS id, s.name AS schema_name, count(t) AS tables_count
+        f"""
+        MATCH (db)-[r1]->(s:{Labels.SCHEMA})-[r2]->(t:{Labels.TABLE})
+        WHERE (db:{Labels.DB} OR db:Database)
+          AND (db.id = $db_id OR db.name = $db_id)
+          AND type(r1) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_DB_TO_SCHEMA}']
+          AND type(r2) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_SCHEMA_TO_TABLE}']
+        WITH coalesce(s.id, s.name) AS id, s.name AS schema_name, count(t) AS tables_count
         ORDER BY schema_name
-        WITH collect({id: id, schema_name: schema_name, tables_count: tables_count}) AS schemas
+        WITH collect({{id: id, schema_name: schema_name, tables_count: tables_count}}) AS schemas
         RETURN size(schemas) AS schemas_count, schemas
         """,
         {"db_id": db_id},
     )
+
+    if not rows:
+        return None
 
     record = rows[0]
     return {
@@ -72,9 +87,12 @@ def list_tables_for_schema(
     """
     neo4j_conn = get_neo4j_conn()
     rows = neo4j_conn.query_read(
-        """
-        MATCH (s:Schema {id: $schema_id})-[:CONTAINS]->(t:Table)-[:CONTAINS]->(c:Column)
-        RETURN t.id AS id,
+        f"""
+        MATCH (s:{Labels.SCHEMA})-[r1]->(t:{Labels.TABLE})-[r2]->(c:{Labels.COLUMN})
+        WHERE (s.id = $schema_id OR s.name = $schema_id)
+          AND type(r1) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_SCHEMA_TO_TABLE}']
+          AND type(r2) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_TABLE_TO_COLUMN}']
+        RETURN coalesce(t.id, t.name) AS id,
                t.name AS name,
                t.db_name AS db_name,
                t.schema_name AS schema_name,
@@ -99,14 +117,16 @@ def list_columns_for_table(table_id: str) -> dict[str, Any] | None:
     """
     neo4j_conn = get_neo4j_conn()
     rows = neo4j_conn.query_read(
-        """
-        MATCH (t:Table {id: $table_id})-[:CONTAINS]->(c:Column)
+        f"""
+        MATCH (t:{Labels.TABLE})-[r]->(c:{Labels.COLUMN})
+        WHERE (t.id = $table_id OR t.name = $table_id)
+          AND type(r) IN ['{RelTypes.CONTAINS}', '{_LEGACY_REL_TABLE_TO_COLUMN}']
         WITH t, c ORDER BY c.ordinal_position
-        WITH t, collect({
+        WITH t, collect({{
                  ordinal_position: c.ordinal_position,
                  column_name: c.name,
                  data_type: c.data_type
-             }) AS columns
+             }}) AS columns
         RETURN t.name AS table_name,
                t.schema_name AS schema_name,
                t.db_name AS db_name,
