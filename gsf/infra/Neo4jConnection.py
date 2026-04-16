@@ -1,17 +1,22 @@
-"""Neo4j access — class layout similar to illumex ``Neo4jConnection`` / manager.
-
-Env files (later overrides earlier): ``<repo>/.env``, then ``<repo>/gsf/.env``.
-Paths follow this file: ``gsf/infra/Neo4jConnection.py``.
-"""
+"""Neo4j connection helpers adapted from NeMo-Retriever."""
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from dotenv import load_dotenv
-from neo4j import Driver, GraphDatabase, NotificationMinimumSeverity
+from neo4j import (
+    Driver,
+    GraphDatabase,
+    NotificationMinimumSeverity,
+    Result,
+    RoutingControl,
+)
+
+logger = logging.getLogger(__name__)
 
 _infra_dir: Final = Path(__file__).resolve().parent
 _gsf_dir: Final = _infra_dir.parent
@@ -22,18 +27,18 @@ _ENV_GSF: Final[Path] = _gsf_dir / ".env"
 
 
 def _refresh_env_from_files() -> None:
-    """Reload ``.env`` on each connect attempt (not frozen after a bad first import)."""
+    """Reload ``.env`` files on each connection attempt."""
     load_dotenv(_ENV_REPO, override=True)
     load_dotenv(_ENV_GSF, override=True)
 
 
 def load_repository_env() -> None:
-    """Load repo root ``.env`` then ``gsf/.env`` (later overrides). Safe to call repeatedly."""
+    """Load repo root ``.env`` then ``gsf/.env`` (later overrides)."""
     _refresh_env_from_files()
 
 
 def neo4j_settings() -> tuple[str, str, str]:
-    """Return ``(uri, user, password)`` from the environment after loading ``.env`` files."""
+    """Return ``(uri, user, password)`` from env after loading ``.env`` files."""
     _refresh_env_from_files()
     uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687").strip()
     user = os.environ.get("NEO4J_USERNAME", "neo4j").strip()
@@ -42,17 +47,14 @@ def neo4j_settings() -> tuple[str, str, str]:
 
 
 class Neo4jConnection:
-    """Holds one lazy :class:`~neo4j.Driver` built from explicit credentials."""
+    """Neo4j connection implementation aligned with NeMo-Retriever."""
 
     def __init__(self, uri: str, username: str, password: str) -> None:
         self._uri = uri
         self._username = username
         self._password = password
         self._driver: Driver | None = None
-
-    @property
-    def driver(self) -> Driver:
-        if self._driver is None:
+        try:
             self._driver = GraphDatabase.driver(
                 self._uri,
                 auth=(self._username, self._password),
@@ -60,6 +62,14 @@ class Neo4jConnection:
                 liveness_check_timeout=4,
                 notifications_min_severity=NotificationMinimumSeverity.OFF,
             )
+        except Exception:
+            logger.exception("Failed to create the Neo4j driver")
+            raise
+
+    @property
+    def driver(self) -> Driver:
+        if self._driver is None:
+            raise RuntimeError("Neo4j driver is not initialized.")
         return self._driver
 
     def verify_connectivity(self) -> None:
@@ -70,35 +80,86 @@ class Neo4jConnection:
             self._driver.close()
             self._driver = None
 
+    def __enter__(self) -> Neo4jConnection:
+        return self
+
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> bool:
+        self.close()
+        return False
+
+    def query(
+        self,
+        query: str,
+        parameters: dict[str, Any] | None = None,
+        routing: RoutingControl = RoutingControl.WRITE,
+        ret_type: str = "data",
+    ) -> list[dict[str, Any]] | Any:
+        try:
+            if ret_type == "data":
+                records, _, _ = self.driver.execute_query(
+                    query,
+                    parameters_=parameters,
+                    routing_=routing,
+                    database_="neo4j",
+                )
+                return [dict(record) for record in records]
+            if ret_type == "graph":
+                return self.driver.execute_query(
+                    query,
+                    parameters_=parameters,
+                    routing_=routing,
+                    database_="neo4j",
+                    result_transformer_=Result.graph,
+                )
+            raise ValueError(f"Unsupported ret_type: {ret_type}")
+        except Exception:
+            logger.exception("CYPHER QUERY FAILED: %s, parameters: %s", query, parameters)
+            raise
+
+    def query_write(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        return self.query(query, parameters)
+
+    def query_read(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        return self.query(query, parameters, routing=RoutingControl.READ)
+
+    def query_graph(self, query: str, parameters: dict[str, Any] | None = None) -> Any:
+        return self.query(query, parameters, ret_type="graph")
+
+
+_conn: Neo4jConnection | None = None
+
+
+def get_neo4j_conn() -> Neo4jConnection:
+    """Return the shared Neo4j connection singleton."""
+    global _conn
+    if _conn is None:
+        uri, user, password = neo4j_settings()
+        if not password:
+            msg = (
+                "NEO4J_PASSWORD is not set after loading .env. "
+                f"Looked for {_ENV_REPO} (exists={_ENV_REPO.is_file()}), "
+                f"{_ENV_GSF} (exists={_ENV_GSF.is_file()}). "
+                "Add NEO4J_PASSWORD there or export it before starting uvicorn."
+            )
+            raise RuntimeError(msg)
+        _conn = Neo4jConnection(uri, user, password)
+        logger.info("Verifying connectivity for Neo4j")
+        _conn.verify_connectivity()
+    return _conn
+
 
 class Neo4jConnectionManager:
-    """Process-wide singleton: :class:`Neo4jConnection` from repo ``.env`` files."""
-
-    def __init__(self) -> None:
-        self._conn: Neo4jConnection | None = None
+    """Compatibility wrapper for existing manager-based callers."""
 
     def connection(self) -> Neo4jConnection:
-        if self._conn is None:
-            uri, user, password = neo4j_settings()
-            if not password:
-                msg = (
-                    "NEO4J_PASSWORD is not set after loading .env. "
-                    f"Looked for {_ENV_REPO} (exists={_ENV_REPO.is_file()}), "
-                    f"{_ENV_GSF} (exists={_ENV_GSF.is_file()}). "
-                    "Add NEO4J_PASSWORD there or export it before starting uvicorn."
-                )
-                raise RuntimeError(msg)
-            self._conn = Neo4jConnection(uri, user, password)
-        return self._conn
+        return get_neo4j_conn()
 
     @property
     def driver(self) -> Driver:
-        return self.connection().driver
+        return get_driver()
 
     def close(self) -> None:
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None
+        close_driver()
 
     def verify_connectivity(self) -> None:
         self.connection().verify_connectivity()
@@ -108,15 +169,18 @@ _manager = Neo4jConnectionManager()
 
 
 def get_driver() -> Driver:
-    """Return the shared driver (lazy; first call loads ``.env`` and may open the pool)."""
-    return _manager.driver
+    """Return the shared Neo4j driver."""
+    return get_neo4j_conn().driver
 
 
 def close_driver() -> None:
-    """Close the shared driver (e.g. FastAPI shutdown)."""
-    _manager.close()
+    """Close and clear the shared Neo4j connection."""
+    global _conn
+    if _conn is not None:
+        _conn.close()
+        _conn = None
 
 
 def get_neo4j_manager() -> Neo4jConnectionManager:
-    """Access the process singleton (e.g. ``.connection()`` or ``.verify_connectivity()``)."""
+    """Return the process-wide Neo4j manager wrapper."""
     return _manager
