@@ -30,7 +30,7 @@ export function mergeColumnsIntoTable(
 		schemas: (db.schemas ?? []).map((s) => ({
 			...s,
 			tables: (s.tables ?? []).map((t) =>
-				t.id === tableId ? { ...t, columns, num_of_columns: columns.length } : t,
+				t.id === tableId ? { ...t, columns, columns_count: columns.length } : t,
 			),
 		})),
 	}));
@@ -44,7 +44,7 @@ function mergeTable(a: Table, b: Table): Table {
 		...a,
 		...b,
 		columns: pickCols,
-		num_of_columns: Math.max(a.num_of_columns, b.num_of_columns, pickCols.length),
+		columns_count: Math.max(a.columns_count, b.columns_count, pickCols.length),
 	};
 }
 
@@ -65,7 +65,7 @@ function mergeSchema(a: Schema, b: Schema): Schema {
 		...a,
 		...b,
 		tables,
-		num_of_tables: Math.max(a.num_of_tables, b.num_of_tables, tables.length),
+		tables_count: Math.max(a.tables_count, b.tables_count, tables.length),
 	};
 }
 

@@ -22,7 +22,7 @@ export function isCatalogBranchLoadedForFocus(databases: Database[], focusId: st
 	if (!sch) return false;
 
 	if (parts.length === 2) {
-		return sch.tables.length > 0 || sch.num_of_tables === 0;
+		return sch.tables.length > 0 || sch.tables_count === 0;
 	}
 
 	const tableId = parts[2];
@@ -33,6 +33,6 @@ export function isCatalogBranchLoadedForFocus(databases: Database[], focusId: st
 		return true;
 	}
 
-	const needsColumns = tbl.num_of_columns > 0;
+	const needsColumns = tbl.columns_count > 0;
 	return !needsColumns || tbl.columns.length > 0;
 }

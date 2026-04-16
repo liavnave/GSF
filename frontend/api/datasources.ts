@@ -1,52 +1,7 @@
 import { requests } from './requests';
 import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { Params } from '@/types/params';
-import type {
-	ApiResponse,
-	RawColumns,
-	RawSchemaRow,
-	RawSchemasResponse,
-	RawTableRow,
-	ResponseWithCount,
-} from './types';
-
-// ---------------------------------------------------------------------------
-// Normalizers: raw server shapes → frontend types
-// ---------------------------------------------------------------------------
-
-function normalizeSchema(raw: RawSchemaRow, dbId: string): Schema {
-	return {
-		id: raw.id,
-		name: raw.schema_name,
-		database_name: dbId,
-		num_of_tables: raw.tables_count,
-		tables: [],
-	};
-}
-
-function normalizeTable(raw: RawTableRow): Table {
-	return {
-		id: raw.id,
-		name: raw.name,
-		description: '',
-		database_name: raw.db_name,
-		schema_name: raw.schema_name,
-		num_of_columns: raw.columns_count,
-		columns: [],
-	};
-}
-
-function normalizeColumns(raw: RawColumns): Column[] {
-	return (raw.columns ?? []).map((c) => ({
-		id: c.column_name,
-		name: c.column_name,
-		data_type: c.data_type ?? 'unknown',
-		database_name: raw.db_name,
-		schema_name: raw.schema_name,
-		table_name: raw.table_name,
-		ordinal_position: c.ordinal_position ?? 0,
-	}));
-}
+import type { ApiResponse, ColumnsEnvelope, ResponseWithCount, SchemasResponse } from './types';
 
 // ---------------------------------------------------------------------------
 // Request dedup caches
@@ -65,11 +20,11 @@ export const datasources = {
 		if (pending != null) return pending;
 
 		const promise = requests
-			.get<RawSchemasResponse>(`schemas/${encodeURIComponent(dbId)}`, {})
+			.get<SchemasResponse>(`schemas/${encodeURIComponent(dbId)}`, {})
 			.then((res): ApiResponse<Schema[]> => {
 				if (res.error) return res as unknown as ApiResponse<Schema[]>;
-				const raw = res as unknown as RawSchemasResponse;
-				const schemas = raw.schemas.map((s) => normalizeSchema(s, dbId));
+				const raw = res as unknown as SchemasResponse;
+				const schemas: Schema[] = raw.schemas.map((s) => ({ ...s, tables: [] }));
 				return { data: schemas, count: raw.schemas_count };
 			})
 			.finally(() => {
@@ -95,10 +50,13 @@ export const datasources = {
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<RawTableRow[]>>(`tables/${encodeURIComponent(schemaId)}`, params)
+			.get<ResponseWithCount<Omit<Table, 'columns'>[]>>(
+				`tables/${encodeURIComponent(schemaId)}`,
+				params,
+			)
 			.then((res): ApiResponse<Table[]> => {
 				if (res.error) return res as unknown as ApiResponse<Table[]>;
-				const tables = res.data.map(normalizeTable);
+				const tables: Table[] = res.data.map((t) => ({ ...t, columns: [] }));
 				return { data: tables, count: tables.length };
 			})
 			.finally(() => {
@@ -127,11 +85,19 @@ export const datasources = {
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<RawColumns>>(`columns/${encodeURIComponent(tableId)}`, params)
+			.get<ResponseWithCount<ColumnsEnvelope>>(
+				`columns/${encodeURIComponent(tableId)}`,
+				params,
+			)
 			.then((res): ApiResponse<Column[]> => {
 				if (res.error) return res as unknown as ApiResponse<Column[]>;
-				const envelope = res.data as unknown as RawColumns;
-				const columns = normalizeColumns(envelope);
+				const envelope = res.data as unknown as ColumnsEnvelope;
+				const columns: Column[] = (envelope.columns ?? []).map((c) => ({
+					...c,
+					db_name: envelope.db_name,
+					schema_name: envelope.schema_name,
+					table_name: envelope.table_name,
+				}));
 				return { data: columns, count: columns.length };
 			})
 			.finally(() => {

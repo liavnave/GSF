@@ -51,7 +51,7 @@ export function resolveTreeNode(focusId: string | null, databases: Database[]): 
 				if (parts.length === 3) return { type: DataModels.TABLE, db, schema, table };
 
 				for (const column of table.columns) {
-					if (parts.length === 4 && parts[3] === column.id) {
+					if (parts.length === 4 && parts[3] === column.column_name) {
 						return { type: DataModels.COLUMN, db, schema, table, column };
 					}
 				}
@@ -169,8 +169,8 @@ export function buildTreeFocusPageFormat(
 					{ key: 'tables', label: 'Tables' },
 				],
 				rows: resolvedFocus.db.schemas.map((s) => ({
-					name: s.name,
-					tables: String(s.num_of_tables),
+					name: s.schema_name,
+					tables: String(s.tables_count),
 				})),
 			});
 			return {
@@ -188,10 +188,10 @@ export function buildTreeFocusPageFormat(
 		case DataModels.SCHEMA: {
 			const s = resolvedFocus.schema;
 			sections.push(
-				...baseCardsForEntity(`Schema ${s.name} in ${s.database_name}.`, [
-					{ label: 'Schema', value: s.name },
-					{ label: 'Database', value: s.database_name },
-					{ label: 'Tables', value: String(s.num_of_tables) },
+				...baseCardsForEntity(`Schema ${s.schema_name} in ${resolvedFocus.db.name}.`, [
+					{ label: 'Schema', value: s.schema_name },
+					{ label: 'Database', value: resolvedFocus.db.name },
+					{ label: 'Tables', value: String(s.tables_count) },
 				]),
 			);
 			sections.push({
@@ -204,14 +204,14 @@ export function buildTreeFocusPageFormat(
 				],
 				rows: s.tables.map((t) => ({
 					name: t.name,
-					columns: String(t.num_of_columns),
+					columns: String(t.columns_count),
 				})),
 			});
 			return {
 				sections,
 				header: {
 					header: {
-						title: s.name,
+						title: s.schema_name,
 						subtitle: `Schema · ${resolvedFocus.db.name}`,
 						entityId: s.id,
 						parentId: resolvedFocus.db.id,
@@ -222,11 +222,11 @@ export function buildTreeFocusPageFormat(
 		case DataModels.TABLE: {
 			const t = resolvedFocus.table;
 			sections.push(
-				...baseCardsForEntity(t.description, [
+				...baseCardsForEntity('', [
 					{ label: 'Table', value: t.name },
 					{ label: 'Schema', value: t.schema_name },
-					{ label: 'Database', value: t.database_name },
-					{ label: 'Columns', value: String(t.num_of_columns) },
+					{ label: 'Database', value: t.db_name },
+					{ label: 'Columns', value: String(t.columns_count) },
 				]),
 			);
 			sections.push({
@@ -240,7 +240,7 @@ export function buildTreeFocusPageFormat(
 				],
 				rows: t.columns.map((col) => ({
 					ordinal_position: String(col.ordinal_position),
-					name: col.name,
+					name: col.column_name,
 					data_type: col.data_type,
 				})),
 			});
@@ -249,7 +249,7 @@ export function buildTreeFocusPageFormat(
 				header: {
 					header: {
 						title: t.name,
-						subtitle: `Table · ${resolvedFocus.schema.name} · ${resolvedFocus.db.name}`,
+						subtitle: `Table · ${resolvedFocus.schema.schema_name} · ${resolvedFocus.db.name}`,
 						entityId: t.id,
 						parentId: resolvedFocus.schema.id,
 					},
@@ -259,12 +259,12 @@ export function buildTreeFocusPageFormat(
 		case DataModels.COLUMN: {
 			const c = resolvedFocus.column;
 			sections.push(
-				...baseCardsForEntity(`Column ${c.name} in ${c.table_name}.`, [
-					{ label: 'Column', value: c.name },
+				...baseCardsForEntity(`Column ${c.column_name} in ${c.table_name}.`, [
+					{ label: 'Column', value: c.column_name },
 					{ label: 'Data type', value: c.data_type.trim() ? c.data_type : '—' },
 					{ label: 'Table', value: c.table_name },
 					{ label: 'Schema', value: c.schema_name },
-					{ label: 'Database', value: c.database_name },
+					{ label: 'Database', value: c.db_name },
 					{ label: 'Position', value: String(c.ordinal_position) },
 				]),
 			);
@@ -272,9 +272,9 @@ export function buildTreeFocusPageFormat(
 				sections,
 				header: {
 					header: {
-						title: c.name,
-						subtitle: `Column · ${c.schema_name} · ${c.table_name} · ${c.database_name}`,
-						entityId: c.id,
+						title: c.column_name,
+						subtitle: `Column · ${c.schema_name} · ${c.table_name} · ${c.db_name}`,
+						entityId: c.column_name,
 						parentId: resolvedFocus.table.id,
 					},
 				},
