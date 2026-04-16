@@ -1,7 +1,12 @@
 import { requests } from './requests';
 import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { Params } from '@/types/params';
-import type { ColumnsByTableResponse, ResponseWithCount, ResponseWithError, SchemasByDbResponse, TablesBySchemaResponse } from './types';
+import type {
+	ColumnsByTableResponse,
+	ResponseWithCount,
+	SchemasByDbResponse,
+	TablesBySchemaResponse,
+} from './types';
 
 const schemasByDbMap = new Map<string, Promise<SchemasByDbResponse>>();
 const tablesBySchemaMap = new Map<string, Promise<TablesBySchemaResponse>>();
@@ -16,10 +21,7 @@ export const datasources = {
 		if (pending != null) return pending;
 
 		const promise = requests
-			.get<ResponseWithCount<Schema[]>>(
-				`schemas/${encodeURIComponent(dbId)}`,
-				{},
-			)
+			.get<ResponseWithCount<Schema[]>>(`schemas/${encodeURIComponent(dbId)}`, {})
 			.finally(() => {
 				schemasByDbMap.delete(dbId);
 			});
@@ -70,10 +72,7 @@ export const datasources = {
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<Column[]>>(
-				`columns/${encodeURIComponent(tableId)}`,
-				params,
-			)
+			.get<ResponseWithCount<Column[]>>(`columns/${encodeURIComponent(tableId)}`, params)
 			.finally(() => {
 				columnsByTableMap.delete(key);
 			});

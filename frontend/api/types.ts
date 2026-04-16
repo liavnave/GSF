@@ -1,4 +1,4 @@
-import { Column, Schema, Table } from "@/types/datasources";
+import { Column, Schema, Table } from '@/types/datasources';
 
 export type ResponseWithError<ValidResponseType> = ValidResponseType & Partial<ApiError>;
 export type ApiError = {
