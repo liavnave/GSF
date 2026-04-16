@@ -34,9 +34,7 @@ export function mergeColumnsIntoTable(
 		schemas: (database.schemas ?? []).map((schema) => ({
 			...schema,
 			tables: (schema.tables ?? []).map((table) =>
-				table.id === tableId
-					? { ...table, columns, columns_count: columns.length }
-					: table,
+				table.id === tableId ? { ...table, columns, columns_count: columns.length } : table,
 			),
 		})),
 	}));
@@ -106,15 +104,15 @@ function mergeDatabase(existing: Database, incoming: Database): Database {
 }
 
 /** Deep-merge catalog trees so prefetch + lazy expansion both keep richest node data. */
-export function mergeDatabaseCatalog(
-	previous: Database[],
-	incoming: Database[],
-): Database[] {
+export function mergeDatabaseCatalog(previous: Database[], incoming: Database[]): Database[] {
 	if (incoming.length === 0) return previous;
 	const databaseById = new Map(previous.map((database) => [database.id, database]));
 	for (const incomingDb of incoming) {
 		const existing = databaseById.get(incomingDb.id);
-		databaseById.set(incomingDb.id, existing ? mergeDatabase(existing, incomingDb) : incomingDb);
+		databaseById.set(
+			incomingDb.id,
+			existing ? mergeDatabase(existing, incomingDb) : incomingDb,
+		);
 	}
 	const orderedIds = [...previous.map((database) => database.id)];
 	for (const database of incoming) {
