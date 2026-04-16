@@ -101,7 +101,7 @@ def list_databases() -> list[dict[str, Any]]:
         # Default routing is WRITE — same practical behavior as Session.run() on
         # bolt://; READ routing can fail on standalone instances.
         rows, _, _ = driver.execute_query(
-            f"""
+            """
             MATCH (db:Database)-[:CONTAINS]->(s:Schema)
             RETURN db.id as id, db.name as name, count(s) as schema_count
             ORDER BY name
@@ -120,7 +120,6 @@ def list_databases() -> list[dict[str, Any]]:
         }
         for r in rows
     ]
-
 
 
 def list_schemas_for_database(db_id: str) -> dict[str, Any] | None:

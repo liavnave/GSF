@@ -1,7 +1,14 @@
 import { requests } from './requests';
 import type { Column, Database, Schema, Table } from '@/types/datasources';
 import type { Params } from '@/types/params';
-import type { ApiResponse, RawColumns, RawSchemaRow, RawSchemasResponse, RawTableRow, ResponseWithCount } from './types';
+import type {
+	ApiResponse,
+	RawColumns,
+	RawSchemaRow,
+	RawSchemasResponse,
+	RawTableRow,
+	ResponseWithCount,
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Normalizers: raw server shapes → frontend types
@@ -59,8 +66,8 @@ export const datasources = {
 
 		const promise = requests
 			.get<RawSchemasResponse>(`schemas/${encodeURIComponent(dbId)}`, {})
-		.then((res): ApiResponse<Schema[]> => {
-			if (res.error) return res as unknown as ApiResponse<Schema[]>;
+			.then((res): ApiResponse<Schema[]> => {
+				if (res.error) return res as unknown as ApiResponse<Schema[]>;
 				const raw = res as unknown as RawSchemasResponse;
 				const schemas = raw.schemas.map((s) => normalizeSchema(s, dbId));
 				return { data: schemas, count: raw.schemas_count };
@@ -89,8 +96,8 @@ export const datasources = {
 
 		const promise = requests
 			.get<ResponseWithCount<RawTableRow[]>>(`tables/${encodeURIComponent(schemaId)}`, params)
-		.then((res): ApiResponse<Table[]> => {
-			if (res.error) return res as unknown as ApiResponse<Table[]>;
+			.then((res): ApiResponse<Table[]> => {
+				if (res.error) return res as unknown as ApiResponse<Table[]>;
 				const tables = res.data.map(normalizeTable);
 				return { data: tables, count: tables.length };
 			})
@@ -120,12 +127,9 @@ export const datasources = {
 		}
 
 		const promise = requests
-			.get<ResponseWithCount<RawColumns>>(
-				`columns/${encodeURIComponent(tableId)}`,
-				params,
-			)
-		.then((res): ApiResponse<Column[]> => {
-			if (res.error) return res as unknown as ApiResponse<Column[]>;
+			.get<ResponseWithCount<RawColumns>>(`columns/${encodeURIComponent(tableId)}`, params)
+			.then((res): ApiResponse<Column[]> => {
+				if (res.error) return res as unknown as ApiResponse<Column[]>;
 				const envelope = res.data as unknown as RawColumns;
 				const columns = normalizeColumns(envelope);
 				return { data: columns, count: columns.length };

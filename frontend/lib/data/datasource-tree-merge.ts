@@ -112,9 +112,7 @@ export function catalogStructureFingerprint(dbs: Database[]): string {
 			const sc = (d.schemas ?? [])
 				.map((s) => {
 					const tables = s.tables ?? [];
-					const tb = tables
-						.map((t) => `${t.id}:${(t.columns ?? []).length}`)
-						.join(',');
+					const tb = tables.map((t) => `${t.id}:${(t.columns ?? []).length}`).join(',');
 					return `${s.id}:${tables.length}:${tb}`;
 				})
 				.join(';');
