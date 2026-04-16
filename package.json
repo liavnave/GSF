@@ -1,16 +1,35 @@
 {
-  "name": "gsf",
-  "private": true,
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint"
-  },
-  "devDependencies": {
-    "turbo": "^2"
-  },
-  "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "unrs-resolver", "esbuild"]
-  }
+	"name": "gsf",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "cd frontend && next dev -p 3000",
+		"dev:api": "cd gsf && uv run --project .. uvicorn server.main:app --reload --host 127.0.0.1 --port 3001",
+		"dev:all": "pnpm dev & pnpm dev:api & wait",
+		"build": "cd frontend && next build",
+		"start": "cd frontend && next start",
+		"lint": "cd frontend && eslint .",
+		"format": "cd frontend && prettier --write .",
+		"format:check": "cd frontend && prettier --check ."
+	},
+	"dependencies": {
+		"@nvidia/foundations-react-core": "^0.604.1",
+		"axios": "^1.14.0",
+		"next": "16.2.2",
+		"react": "19.2.4",
+		"react-dom": "19.2.4"
+	},
+	"devDependencies": {
+		"@tailwindcss/postcss": "^4",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"eslint": "^9",
+		"eslint-config-next": "16.2.2",
+		"prettier": "^3.8.1",
+		"tailwindcss": "^4",
+		"typescript": "^5",
+		"vite": "^8.0.4",
+		"vitest": "^4.1.2"
+	}
 }
