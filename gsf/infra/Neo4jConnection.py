@@ -113,13 +113,19 @@ class Neo4jConnection:
                 )
             raise ValueError(f"Unsupported ret_type: {ret_type}")
         except Exception:
-            logger.exception("CYPHER QUERY FAILED: %s, parameters: %s", query, parameters)
+            logger.exception(
+                "CYPHER QUERY FAILED: %s, parameters: %s", query, parameters
+            )
             raise
 
-    def query_write(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def query_write(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         return self.query(query, parameters)
 
-    def query_read(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def query_read(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         return self.query(query, parameters, routing=RoutingControl.READ)
 
     def query_graph(self, query: str, parameters: dict[str, Any] | None = None) -> Any:
