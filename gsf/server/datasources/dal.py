@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from nemo_retriever.tabular_data.ingestion.model.reserved_words import Labels, RelTypes
-
-from infra.Neo4jConnection import get_neo4j_conn
+from nemo_retriever.tabular_data.neo4j import get_neo4j_conn
 
 _LEGACY_REL_DB_TO_SCHEMA = "HAS_SCHEMA"
 _LEGACY_REL_SCHEMA_TO_TABLE = "HAS_TABLE"
 _LEGACY_REL_TABLE_TO_COLUMN = "HAS_COLUMN"
+
+_dal_dir = Path(__file__).resolve().parent
+_server_dir = _dal_dir.parent
+_gsf_dir = _server_dir.parent
+_repo_root = _gsf_dir.parent
+
+
+def _get_nemo_neo4j_conn():
+    load_dotenv(_repo_root / ".env", override=True)
+    load_dotenv(_gsf_dir / ".env", override=True)
+    return get_neo4j_conn()
+
+
 # ---------------------------------------------------------------------------
 # Graph queries (public API for routers / services)
 # ---------------------------------------------------------------------------
@@ -18,7 +32,7 @@ _LEGACY_REL_TABLE_TO_COLUMN = "HAS_COLUMN"
 
 def list_databases() -> list[dict[str, Any]]:
     """Return Database rows with schema counts only; ``schemas`` is empty for lazy trees."""
-    neo4j_conn = get_neo4j_conn()
+    neo4j_conn = _get_nemo_neo4j_conn()
 
     rows = neo4j_conn.query_read(
         f"""
@@ -49,7 +63,7 @@ def list_schemas_for_database(db_id: str) -> dict[str, Any] | None:
 
     Returns ``None`` if no ``Database`` matches ``db_id``.
     """
-    neo4j_conn = get_neo4j_conn()
+    neo4j_conn = _get_nemo_neo4j_conn()
     rows = neo4j_conn.query_read(
         f"""
         MATCH (db)-[r1]->(s:{Labels.SCHEMA})-[r2]->(t:{Labels.TABLE})
@@ -85,7 +99,7 @@ def list_tables_for_schema(
     Each table dict contains ``database_name``, ``schema_name``, ``name``,
     and ``columns_count``.
     """
-    neo4j_conn = get_neo4j_conn()
+    neo4j_conn = _get_nemo_neo4j_conn()
     rows = neo4j_conn.query_read(
         f"""
         MATCH (s:{Labels.SCHEMA})-[r1]->(t:{Labels.TABLE})-[r2]->(c:{Labels.COLUMN})
@@ -115,7 +129,7 @@ def list_columns_for_table(table_id: str) -> dict[str, Any] | None:
     node), ``columns_count``, and ``columns`` — a list of
     ``{ordinal_position, column_name, data_type}`` dicts.
     """
-    neo4j_conn = get_neo4j_conn()
+    neo4j_conn = _get_nemo_neo4j_conn()
     rows = neo4j_conn.query_read(
         f"""
         MATCH (t:{Labels.TABLE})-[r]->(c:{Labels.COLUMN})
